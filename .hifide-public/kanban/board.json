@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "columns": [
+    "backlog",
+    "todo",
+    "inProgress",
+    "done"
+  ],
+  "epics": [],
+  "tasks": [],
+  "metadata": {
+    "createdAt": 1765070422440
+  }
+}

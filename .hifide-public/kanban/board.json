@@ -7,7 +7,188 @@
     "done"
   ],
   "epics": [],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "task-dbace049-6208-46ed-88af-03bcd1d78f72",
+      "title": "Generate remaining JSON Schemas for OFSCP spec (v0.1)",
+      "status": "done",
+      "order": 0,
+      "description": "Continue generating JSON Schemas for OFSCP spec models beyond provider discovery: user profile, presence, privacy, groups/channels, messages, paging envelope, errors, and any other payloads described in docs/ofscp_spec.md. Add samples + AJV validation tests. Update KB with schema structure and how to validate.",
+      "epicId": null,
+      "kbArticleId": "dfcb1509-b3d4-46ce-9161-7c6f5b9894b2",
+      "assignees": [
+        "ai"
+      ],
+      "tags": [
+        "schema",
+        "ofscp",
+        "docs",
+        "tests"
+      ],
+      "createdAt": 1765916104068,
+      "updatedAt": 1765916327096,
+      "archived": false
+    },
+    {
+      "id": "task-e6d83150-396f-4190-aab0-289c223a53f7",
+      "title": "Generate official JSON Schemas for the OFSCP spec",
+      "status": "done",
+      "order": 1,
+      "description": "Examine the OFSCP specification in this repo and generate JSON Schema files for official hosting. Include schema structure, ids, versioning, and validation tests.",
+      "epicId": null,
+      "kbArticleId": null,
+      "assignees": [
+        "ai"
+      ],
+      "tags": [
+        "schema",
+        "ofscp",
+        "json-schema",
+        "docs"
+      ],
+      "createdAt": 1765915805976,
+      "updatedAt": 1765915931624,
+      "archived": false
+    },
+    {
+      "id": "task-ce7c947f-8227-49f5-83a8-6fb0e9382ee6",
+      "title": "Spec: restrict identifiers to URI-based option; update references to ids",
+      "status": "done",
+      "order": 2,
+      "description": "Update OFSCP spec sections 2.2 and 2.4 to allow only URI-based identifiers; scan remaining doc for outdated references to other id forms and update accordingly.",
+      "epicId": null,
+      "kbArticleId": "dfcb1509-b3d4-46ce-9161-7c6f5b9894b2",
+      "assignees": [
+        "ai"
+      ],
+      "tags": [
+        "docs",
+        "spec",
+        "ofscp"
+      ],
+      "createdAt": 1765908482490,
+      "updatedAt": 1765908539767,
+      "archived": false
+    },
+    {
+      "id": "task-cd298d6d-85b2-4e67-9acb-ee16a8d2fffb",
+      "title": "Reorganize OFSCP spec: move 5.1.3 into privacy endpoints section and renumber 5.1A into its own numbered section",
+      "status": "done",
+      "order": 3,
+      "description": "User requested spec restructuring: 5.1.3 (Visibility policy) should live within the privacy endpoints section, and section 5.1A should be moved out so it has its own top-level number (not nested awkwardly under 5.1). Implement by moving/renumbering relevant sections in docs/ofscp_spec.md and ensuring internal references remain consistent.",
+      "epicId": null,
+      "kbArticleId": null,
+      "assignees": [
+        "ai"
+      ],
+      "tags": [
+        "docs",
+        "spec",
+        "refactor"
+      ],
+      "createdAt": 1765904129087,
+      "updatedAt": 1765904157144,
+      "archived": false
+    },
+    {
+      "id": "task-ac2848c6-285a-4f84-a1f2-489f61e17f51",
+      "title": "Design presence/bio/group privacy model + endpoints for OFSCP user profile",
+      "status": "done",
+      "order": 4,
+      "description": "User wants users to control privacy of presence, group membership, and bio. Propose endpoint model, data shapes, authz rules, and how federation/lookup behaves. Update docs/ofscp_spec.md accordingly after design is agreed.",
+      "epicId": null,
+      "kbArticleId": "dfcb1509-b3d4-46ce-9161-7c6f5b9894b2",
+      "assignees": [
+        "ai-assistant"
+      ],
+      "tags": [
+        "ofscp",
+        "spec",
+        "privacy",
+        "api"
+      ],
+      "createdAt": 1765855241697,
+      "updatedAt": 1765855645888,
+      "archived": false
+    },
+    {
+      "id": "task-e131948a-91e5-43ea-9d7f-7f52569478c9",
+      "title": "Second pass: apply full normalization + remaining OFSCP spec improvements to docs/ofscp_spec.md",
+      "status": "done",
+      "order": 5,
+      "description": "User reported prior edits didn't go through. Re-apply full set of suggestions: normalize metadata types, pagination cursor semantics, reaction schema, identity privacy/public-private split, SSE resume, RFC7807 errors, federation request auth details, discoverability tier standards and mapping, identifier standards, etc. Ensure changes persist and verify by rereading file.",
+      "epicId": null,
+      "kbArticleId": null,
+      "assignees": [
+        "autonomous-ai"
+      ],
+      "tags": [
+        "docs",
+        "spec",
+        "federation",
+        "interop"
+      ],
+      "createdAt": 1765851634191,
+      "updatedAt": 1765851709723,
+      "archived": false
+    },
+    {
+      "id": "task-da4e3673-4333-4aca-a272-d14227a943e8",
+      "title": "Second pass: normalize OFSCP spec inconsistencies (metadata types, cursors, identifiers, SSE resume, error format, privacy/user model)",
+      "status": "done",
+      "order": 6,
+      "description": "Apply remaining recommendations to docs/ofscp_spec.md: normalize metadata to one shape, fix cursor examples to opaque cursors, clarify identifiers (URI vs id/home), tighten SSE (event ids + Last-Event-ID), standardize errors (RFC7807), split public vs private user fields guidance, reaction schema cleanup, and align tiers/capabilities semantics. Update KB accordingly.",
+      "epicId": null,
+      "kbArticleId": "dfcb1509-b3d4-46ce-9161-7c6f5b9894b2",
+      "assignees": [
+        "autonomous-ai"
+      ],
+      "tags": [
+        "docs",
+        "spec",
+        "interop",
+        "security"
+      ],
+      "createdAt": 1765845290841,
+      "updatedAt": 1765845402589,
+      "archived": false
+    },
+    {
+      "id": "task-ab36464f-d03d-4b94-8bbe-0085490bec46",
+      "title": "Apply interoperability/security/versioning fixes to docs/ofscp_spec.md",
+      "status": "done",
+      "order": 7,
+      "description": "Incorporate prior review suggestions into docs/ofscp_spec.md: define versioning/compat rules, canonical identifiers & data formats, standard request signing + key rotation + replay prevention, SSE resume semantics, metadata consistency, error format guidance. Update/align KB article if needed.",
+      "epicId": null,
+      "kbArticleId": null,
+      "assignees": [
+        "ai"
+      ],
+      "tags": [
+        "docs",
+        "spec",
+        "security",
+        "federation"
+      ],
+      "createdAt": 1765845073342,
+      "updatedAt": 1765845133249,
+      "archived": false
+    },
+    {
+      "id": "task-3b4662f1-eb05-456e-ba84-7b3d8559b343",
+      "title": "Feedback on docs/ofscp_spec.md",
+      "status": "done",
+      "order": 8,
+      "description": "Review the OFSCP specification for holes, oversights, improvements, simpler implementations, and recommendations for standards. Do not modify the file.",
+      "epicId": null,
+      "kbArticleId": null,
+      "assignees": [],
+      "tags": [],
+      "createdAt": 1765659413734,
+      "updatedAt": 1765844075133,
+      "archived": false
+    }
+  ],
   "metadata": {
     "createdAt": 1765070422440
   }

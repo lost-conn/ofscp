@@ -1,0 +1,40 @@
+{
+  "provider": {
+    "domain": "social.example",
+    "protocolVersion": "0.1.0",
+    "software": {
+      "name": "example-ofscp",
+      "version": "2025.03.0"
+    },
+    "contact": "mailto:admin@social.example",
+    "authentication": {
+      "issuer": "https://social.example",
+      "authorization_endpoint": "https://social.example/oauth/authorize",
+      "token_endpoint": "https://social.example/oauth/token",
+      "userinfo_endpoint": "https://social.example/oauth/userinfo"
+    },
+    "publicKeys": [
+      {
+        "kid": "sig-2025-01",
+        "alg": "Ed25519",
+        "publicKey": "base64:REPLACE_ME"
+      }
+    ]
+  },
+  "capabilities": {
+    "messageTypes": ["memo", "article", "message", "reaction"],
+    "discoverability": ["private", "group", "public", "discoverable"],
+    "metadataSchemas": [
+      {
+        "id": "com.example.poll",
+        "uri": "https://social.example/meta/poll.json"
+      }
+    ]
+  },
+  "endpoints": {
+    "identity": "https://social.example/api/identity",
+    "groups": "https://social.example/api/groups",
+    "notifications": "https://social.example/api/notifications",
+    "tiers": "https://social.example/api/tiers"
+  }
+}

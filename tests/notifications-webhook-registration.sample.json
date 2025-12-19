@@ -1,0 +1,5 @@
+{
+  "type": "webpush",
+  "target": "https://push-service.example/endpoint",
+  "events": ["message.created", "call.started"]
+}

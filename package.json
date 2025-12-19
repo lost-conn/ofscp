@@ -1,0 +1,12 @@
+{
+  "name": "ofscp",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "scripts": {
+    "test": "node tests/validate-schemas.mjs"
+  }
+}

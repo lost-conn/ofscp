@@ -1,0 +1,7 @@
+{
+  "type": "https://ofscp.example/errors/invalid-payload",
+  "title": "Invalid payload",
+  "status": 400,
+  "detail": "Field 'content.text' is required",
+  "instance": "/api/groups/grp_1/channels/chn_general/messages"
+}

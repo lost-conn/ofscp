@@ -1,1 +1,2 @@
-.hifide-private/**
+.hifide-private
+node_modules

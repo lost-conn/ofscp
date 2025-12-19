@@ -1,0 +1,17 @@
+{
+  "channel": "chn_voice",
+  "call": {
+    "state": "inactive",
+    "participants": [
+      {
+        "user": "jane@a.com",
+        "role": "host",
+        "media": {
+          "audio": "opus",
+          "video": "vp9"
+        }
+      }
+    ],
+    "metadata": []
+  }
+}

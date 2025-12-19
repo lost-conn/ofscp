@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/common.json",
+  "title": "OFSCP Common Definitions (v0.1)",
+  "type": "object",
+  "$defs": {
+    "HttpsUri": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "description": "Absolute HTTPS URI identifier."
+    },
+    "Rfc3339DateTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 / ISO-8601 timestamp with timezone."
+    },
+    "MimeType": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+$",
+      "description": "IANA media type (best-effort validation)."
+    },
+    "OpaqueCursor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque pagination cursor; treat as an uninterpreted string."
+    },
+    "MetadataItem": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "schema": { "$ref": "#/$defs/HttpsUri" },
+        "version": { "type": "string" },
+        "data": {
+          "type": ["object", "array", "string", "number", "boolean", "null"],
+          "description": "Arbitrary metadata payload. Schema-specific validation is external."
+        }
+      },
+      "required": ["schema", "version", "data"],
+      "description": "Extension metadata object. Unknown schemas MUST be ignored by consumers."
+    },
+    "Metadata": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/MetadataItem" },
+      "default": []
+    },
+    "Discoverability": {
+      "type": "string",
+      "enum": ["private", "group", "public", "discoverable"]
+    },
+    "VisibilityPolicy": {
+      "type": "string",
+      "enum": ["public", "authenticated", "sharedGroups", "contacts", "nobody"]
+    }
+  }
+}

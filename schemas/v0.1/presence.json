@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/presence.json",
+  "title": "OFSCP Presence (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["availability", "metadata"],
+  "properties": {
+    "availability": {
+      "type": "string",
+      "enum": ["online", "away", "dnd", "offline"]
+    },
+    "status": { "type": "string" },
+    "lastSeen": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

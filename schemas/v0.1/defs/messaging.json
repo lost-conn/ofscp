@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/messaging.json",
+  "title": "OFSCP v0.1 Messaging definitions",
+  "type": "object",
+  "$defs": {
+    "Content": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["text", "mime"],
+      "properties": {
+        "text": { "type": "string" },
+        "mime": { "$ref": "./common.json#/$defs/MimeType" }
+      }
+    },
+    "MessageReference": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Permissions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "editUntil": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
+      }
+    },
+    "BaseMessage": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "author", "type", "content", "attachments", "createdAt", "metadata"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "author": { "$ref": "./identity.json#/$defs/UserRef" },
+        "type": { "type": "string", "enum": ["message", "memo", "article"] },
+        "content": { "$ref": "#/$defs/Content" },
+        "attachments": {
+          "type": "array",
+          "items": { "$ref": "./objects.json#/$defs/Attachment" }
+        },
+        "reference": { "$ref": "#/$defs/MessageReference" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "permissions": { "$ref": "#/$defs/Permissions" },
+        "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
+      }
+    },
+    "Reaction": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "author", "key", "reference", "createdAt", "metadata"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "author": { "$ref": "./identity.json#/$defs/UserRef" },
+        "key": { "type": "string", "minLength": 1 },
+        "unicode": { "type": "string" },
+        "image": { "$ref": "./common.json#/$defs/HttpsUri" },
+        "reference": { "$ref": "#/$defs/MessageReference" },
+        "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
+      }
+    },
+    "TimelineItem": {
+      "description": "Union of message-like objects present in timelines.",
+      "oneOf": [{ "$ref": "#/$defs/BaseMessage" }, { "$ref": "#/$defs/Reaction" }]
+    },
+    "PagedResponse": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["items", "page"],
+      "properties": {
+        "items": { "type": "array" },
+        "page": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "nextCursor": { "$ref": "./common.json#/$defs/OpaqueCursor" },
+            "prevCursor": { "$ref": "./common.json#/$defs/OpaqueCursor" }
+          }
+        }
+      }
+    }
+  }
+}

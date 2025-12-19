@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/call-channel-state.json",
+  "title": "OFSCP Call channel state (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["channel", "call"],
+  "properties": {
+    "channel": { "type": "string", "minLength": 1 },
+    "call": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["state", "participants", "metadata"],
+      "properties": {
+        "state": { "type": "string", "enum": ["inactive", "active"] },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["user", "role", "media"],
+            "properties": {
+              "user": { "$ref": "./defs/identity.json#/$defs/UserRef" },
+              "role": { "type": "string", "minLength": 1 },
+              "media": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "audio": { "type": "string" },
+                  "video": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+      }
+    }
+  }
+}

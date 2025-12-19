@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/user-profile.json",
+  "title": "OFSCP UserProfile (v0.1)",
+  "$ref": "./defs/identity.json#/$defs/UserProfile"
+}

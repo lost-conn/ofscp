@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/user-public-profile-response.json",
+  "title": "OFSCP GET /api/users/{userRef}/profile response (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "handle", "domain", "updatedAt", "metadata"],
+  "properties": {
+    "id": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+    "handle": { "type": "string", "minLength": 1 },
+    "domain": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string" },
+    "avatar": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+    "bio": { "type": "string" },
+    "updatedAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

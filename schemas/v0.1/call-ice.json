@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/call-ice.json",
+  "title": "OFSCP call signaling ICE payload (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["candidate"],
+  "properties": {
+    "candidate": { "type": "string", "minLength": 1 },
+    "sdpMid": { "type": "string" },
+    "sdpMLineIndex": { "type": "integer", "minimum": 0 }
+  }
+}

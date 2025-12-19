@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/privacy.json",
+  "title": "OFSCP v0.1 Privacy-related definitions",
+  "type": "object",
+  "$defs": {
+    "VisibilityPolicy": {
+      "type": "string",
+      "enum": ["public", "authenticated", "sharedGroups", "contacts", "nobody"]
+    }
+  }
+}

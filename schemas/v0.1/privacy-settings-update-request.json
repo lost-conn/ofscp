@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/privacy-settings-update-request.json",
+  "title": "OFSCP PUT /api/me/privacy request (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "presenceVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
+    "profileVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
+    "membershipVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

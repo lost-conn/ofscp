@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/identity.json",
+  "title": "OFSCP v0.1 Identity definitions",
+  "type": "object",
+  "$defs": {
+    "UserRef": {
+      "description": "User reference. Spec examples often use handle@domain strings; for interoperability, IDs SHOULD be HTTPS URIs (but clients must treat as opaque).",
+      "oneOf": [
+        { "$ref": "./common.json#/$defs/HttpsUri" },
+        {
+          "type": "string",
+          "pattern": "^[^@\\s]+@[^@\\s]+$",
+          "examples": ["jane@a.com"]
+        }
+      ]
+    },
+    "UserProfile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "handle", "domain", "updatedAt", "metadata"],
+      "properties": {
+        "id": { "$ref": "./common.json#/$defs/HttpsUri" },
+        "handle": { "type": "string", "minLength": 1 },
+        "domain": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string" },
+        "avatar": { "$ref": "./common.json#/$defs/HttpsUri" },
+        "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
+      }
+    },
+    "UserAccount": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["profile", "settings"],
+      "properties": {
+        "profile": { "$ref": "#/$defs/UserProfile" },
+        "settings": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

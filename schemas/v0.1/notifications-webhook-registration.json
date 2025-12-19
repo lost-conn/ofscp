@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/notifications-webhook-registration.json",
+  "title": "OFSCP POST /api/notifications/endpoints request (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["type", "target", "events"],
+  "properties": {
+    "type": { "type": "string", "minLength": 1 },
+    "target": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+    "events": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

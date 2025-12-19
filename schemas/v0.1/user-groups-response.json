@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/user-groups-response.json",
+  "title": "OFSCP GET /api/users/{userRef}/groups response (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["groups", "metadata"],
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id"],
+        "properties": {
+          "id": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+        }
+      }
+    },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

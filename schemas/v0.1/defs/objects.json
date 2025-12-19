@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/objects.json",
+  "title": "OFSCP v0.1 Shared object definitions",
+  "type": "object",
+  "$defs": {
+    "MetadataObject": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema", "version", "data"],
+      "properties": {
+        "schema": { "$ref": "./common.json#/$defs/HttpsUri" },
+        "version": { "type": "string", "minLength": 1 },
+        "data": {
+          "description": "Arbitrary JSON for the referenced metadata schema.",
+          "type": ["object", "array", "string", "number", "boolean", "null"]
+        }
+      }
+    },
+    "MetadataList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/MetadataObject" }
+    },
+    "Attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "mime", "url", "size"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "mime": { "$ref": "./common.json#/$defs/MimeType" },
+        "url": { "$ref": "./common.json#/$defs/HttpsUri" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

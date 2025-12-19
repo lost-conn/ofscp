@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/provider-discovery.json",
+  "title": "OFSCP Provider Discovery Document (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "domain": { "type": "string", "minLength": 1 },
+        "protocolVersion": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+        },
+        "software": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" }
+          },
+          "required": ["name", "version"]
+        },
+        "contact": { "type": "string" },
+        "authentication": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "issuer": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "authorization_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "token_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "userinfo_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+          },
+          "required": [
+            "issuer",
+            "authorization_endpoint",
+            "token_endpoint",
+            "userinfo_endpoint"
+          ]
+        },
+        "publicKeys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "kid": { "type": "string", "minLength": 1 },
+              "alg": { "type": "string", "enum": ["Ed25519"] },
+              "publicKey": { "type": "string", "minLength": 1 }
+            },
+            "required": ["kid", "alg", "publicKey"]
+          }
+        }
+      },
+      "required": ["domain", "protocolVersion", "software", "contact", "authentication"]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "messageTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["memo", "article", "message", "reaction"]
+          }
+        },
+          "discoverability": {
+            "type": "array",
+            "items": { "$ref": "./defs/common.json#/$defs/Discoverability" }
+          },
+        "metadataSchemas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "uri": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+            },
+            "required": ["id", "uri"]
+          }
+        }
+      }
+    },
+    "endpoints": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+      "identity": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+      "groups": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+      "notifications": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+      "tiers": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+      },
+      "required": ["identity", "groups", "notifications", "tiers"]
+    }
+  },
+  "required": ["provider", "capabilities", "endpoints"]
+}

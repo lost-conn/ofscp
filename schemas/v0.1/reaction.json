@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/reaction.json",
+  "title": "OFSCP Reaction (v0.1)",
+  "$ref": "./defs/messaging.json#/$defs/Reaction"
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/problem-details.json",
+  "title": "RFC7807 Problem Details (with OFSCP extension) (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["type", "title", "status"],
+  "properties": {
+    "type": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+    "title": { "type": "string" },
+    "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+    "detail": { "type": "string" },
+    "instance": { "type": "string" },
+    "errorCode": { "type": "string" }
+  }
+}

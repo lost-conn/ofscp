@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/user-update-profile-request.json",
+  "title": "OFSCP PATCH /api/me/profile request (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "displayName": { "type": "string" },
+    "avatar": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+    "bio": { "type": "string" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

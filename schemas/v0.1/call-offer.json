@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/call-offer.json",
+  "title": "OFSCP call signaling offer payload (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["sdp"],
+  "properties": {
+    "sdp": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "enum": ["offer"] }
+  }
+}

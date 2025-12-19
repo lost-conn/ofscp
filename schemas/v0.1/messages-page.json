@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/messages-page.json",
+  "title": "OFSCP paged messages response (v0.1)",
+  "allOf": [
+    { "$ref": "./defs/messaging.json#/$defs/PagedResponse" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "./defs/messaging.json#/$defs/TimelineItem" }
+        }
+      }
+    }
+  ]
+}

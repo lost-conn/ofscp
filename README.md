@@ -44,7 +44,7 @@ What if you could "follow" your favorite blogs, and see all of the new posts in 
 
 And, most importantly, what if all of these things were tied together, so you only need one account, and it was all accessible from a client of your choosing?
 
-This is what OFSCP aims to provide. A way to put content and communities back in the hands of creators and people, not platforms. All *without* sacrificing the modern convenience that these platforms provide.
+This is what OFSCP aims to provide. A way to put content and communities back into the hands of creators and people, not platforms. All *without* sacrificing the modern convenience that these platforms provide.
 
 ## Contributing
 

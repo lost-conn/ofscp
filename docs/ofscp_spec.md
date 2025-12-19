@@ -6,7 +6,9 @@
 
 
 
-## 1. Goals & Scope
+## 1. Introduction
+
+### 1.1. Goals & Scope
 
 OFSCP defines an application-layer protocol that allows independently operated providers to offer a shared social + messaging experience. The specification focuses on:
 
@@ -16,9 +18,7 @@ OFSCP defines an application-layer protocol that allows independently operated p
 
 Everything in this document uses RFC 2119 keywords (**MUST**, **SHOULD**, etc.).
 
-
-
-## 2. Terminology
+### 1.2. Terminology
 
 | Term | Description |
 | --- | --- |
@@ -29,7 +29,56 @@ Everything in this document uses RFC 2119 keywords (**MUST**, **SHOULD**, etc.).
 | **Call Channel** | A channel that can host an active audio/video session. |
 | **Home Provider** | Provider where a user account is registered. |
 | **Remote Provider** | Other providers participating in federation for a channel, DM, or broadcast. |
-| **Metadata Object** | Schema-described extension payload attached to base objects. |
+
+---
+
+## 2. Compatibility & Extensibility (Normative)
+
+### 2.1. Protocol versioning
+
+OFSCP protocol versions use **Semantic Versioning** (SemVer): `MAJOR.MINOR.PATCH`.
+
+* **MAJOR** increments indicate breaking changes.
+* **MINOR** increments indicate backward-compatible additions.
+* **PATCH** increments indicate clarifications and non-behavioral corrections.
+
+Providers **MUST** publish their supported protocol version as `provider.protocolVersion` in the discovery document.
+
+### 2.2. Standard identifier forms
+
+For interoperability, implementations **MUST** use the **URI form** consistently across all endpoints.
+
+* **URI form:** references are absolute HTTPS URLs.
+
+### 2.3. Forward compatibility
+
+To enable evolution without breaking interoperability:
+
+* Clients and providers **MUST** ignore unknown JSON object fields.
+* Clients and providers **MUST** ignore unknown event types.
+* Unknown `message.type` values **MUST** be rendered as a generic “message” using best-effort content display.
+
+### 2.4. Canonical identifiers
+
+Objects commonly include an `id`. For cross-provider interoperability, implementations **MUST** treat IDs as **opaque**.
+
+To avoid collisions, implementations **MUST** use **URI identifiers**: globally unique, stable URLs (e.g. `https://social.example/api/messages/msg_123`).
+
+Within this document, examples may show short IDs (e.g. `msg_1`) for readability.
+
+### 2.5. Canonical data formats
+
+* Timestamps **MUST** be RFC 3339 / ISO-8601 strings with timezone (UTC recommended), e.g. `2025-03-01T12:00:00Z`.
+* `mime` values **MUST** be valid IANA media types.
+* Pagination cursors **MUST** be treated as opaque strings.
+
+Providers **SHOULD** define maximum payload sizes (request and response) and return **413** when exceeded.
+
+### 2.6. Standard error envelope
+
+Providers **SHOULD** return errors using RFC 7807 Problem Details (`application/problem+json`) with stable `type` URIs.
+
+Providers **MAY** additionally include an `errorCode` field for machine-friendly, stable short codes.
 
 ---
 
@@ -49,14 +98,11 @@ Content-Type: application/json
 {
   "provider": {
     "domain": "social.example",
-    "version": "0.1",
-    "publicKeys": [
-      {
-        "use": "sig",
-        "alg": "ed25519",
-        "key": "base64pubkey"
-      }
-    ],
+    "protocolVersion": "0.1.0",
+    "software": {
+      "name": "example-ofscp",
+      "version": "2025.03.0"
+    },
     "contact": "mailto:admin@social.example",
     "authentication": {
       "issuer": "https://social.example",
@@ -84,7 +130,9 @@ Content-Type: application/json
 }
 ```
 
-Providers **MUST** include a monotonically increasing `version`. Clients **MAY** cache documents for up to 24 hours.
+Providers **MUST** include a `protocolVersion` matching this specification’s SemVer rules.
+
+Clients **MAY** cache discovery documents, but providers **SHOULD** set HTTP caching headers (e.g. `Cache-Control`, `ETag`).
 
 ### 3.2. Provider Descriptor Schema
 
@@ -116,22 +164,21 @@ Clients use **OAuth 2.0** for session authentication (logging in).
 *   Providers **MUST** validate the token against the issued session.
 *   If the token expires, clients **SHOULD** use the refresh token or re-authenticate.
 
-
 ### 4.3. Federated User Lookup
 
 When a remote provider needs to verify a user:
 
 ```http
-GET /api/identity/users/{handle}@{home}
-Headers: X-OFSCP-Provider: {requester-domain}
+GET /api/identity/users/{handle}@{domain}
+Authorization: Signature <...> 
 ```
 
 Response:
 ```json
 {
-  "id": "usr_123",
+  "id": "https://a.com/api/users/usr_123",
   "handle": "jane",
-  "home": "a.com",
+  "domain": "a.com",
   "updatedAt": "2025-03-01T12:00:00Z"
 }
 ```
@@ -143,30 +190,56 @@ Remote providers **MUST** cache user info and respect `updatedAt` for invalidati
 ## 5. Data Models
 
 ### 5.1. User
+
+Users have both *public profile* fields and *private account settings* fields.
+
+Providers **MUST NOT** expose private account fields to unauthenticated parties.
+
+Providers **SHOULD NOT** include private account fields in federated lookups.
+
+Additionally, some user-adjacent data (notably: presence, bio, and group membership visibility) may have user-configurable privacy settings. To avoid accidental leakage, providers **MUST** expose these via dedicated endpoints that apply the subject’s privacy policy when returning data to a viewer. See [section 6](#6-user-privacy-endpoints-profile-presence-membership-listing) for more details.
+
+#### 5.1.1. UserProfile (public)
+
+`UserProfile` is the minimal, safe-to-share representation of a user used in membership lists, message author fields, and federated lookups.
+
+**UserProfile (example):**
 ```json
 {
-  "id": "usr_123",
+  "id": "https://a.com/api/users/usr_123",
   "handle": "jane",
-  "home": "a.com",
+  "domain": "a.com",
   "displayName": "Jane Doe",
   "avatar": "https://cdn...",
-  "presence": {
-    "availability": "online",
-    "status": "text"
-  },
-  "bio": "text",
-  "groups": ["https://a.com/grp_1"],
-  "settings": {"theme": "dark"},
-  "notificationEndpoints": [
-    {
-      "type": "webhook",
-      "url": "https://client/push"
-    }
-  ]
+
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
 }
 ```
 
-### 5.2. Group & Channels
+#### 5.1.2. UserAccount (private, not federated)
+
+`UserAccount` is returned only to the authenticated user (e.g. via a `/me` endpoint). It may include provider-specific settings.
+
+**UserAccount (example):**
+```json
+{
+  "profile": {
+    "id": "https://a.com/api/users/usr_123",
+    "handle": "jane",
+    "domain": "a.com",
+    "displayName": "Jane Doe",
+    "avatar": "https://cdn...",
+    "updatedAt": "2025-03-01T12:00:00Z",
+    "metadata": []
+  },
+  "settings": {
+    "theme": "dark"
+  }
+}
+```
+
+### 5.3. Group & Channels
 ```json
 {
   "id": "grp_1",
@@ -182,7 +255,7 @@ Remote providers **MUST** cache user info and respect `updatedAt` for invalidati
       "type": "text",
       "discoverability": "public",
       "tags": ["announcements"],
-      "metadata": {}
+      "metadata": []
     },
     {
       "id": "chn_voice",
@@ -191,7 +264,8 @@ Remote providers **MUST** cache user info and respect `updatedAt` for invalidati
       "call": {
         "active": false,
         "participants": []
-      }
+      },
+      "metadata": []
     }
   ]
 }
@@ -209,7 +283,8 @@ Chats are intended for short, real-time communications between users.
   "author": "jane@a.com",
   "type": "message",
   "content": {
-    "text": "Hello"
+    "text": "Hello",
+    "mime": "text/plain"
   },
   "attachments": [
     {
@@ -226,7 +301,7 @@ Chats are intended for short, real-time communications between users.
   "tags": ["#intro"],
   "createdAt": "2025-03-01T12:00:00Z",
   "permissions": {
-    "editUntil": "2025-03-01T13:00Z"
+    "editUntil": "2025-03-01T13:00:00Z"
   },
   "metadata": []
 }
@@ -242,7 +317,8 @@ Memos are intended to be short-form posts similar to many social media platforms
   "author": "jane@a.com",
   "type": "memo",
   "content": {
-    "text": "Hi everyone..."
+    "text": "Hi everyone...",
+    "mime": "text/plain"
   },
   "attachments": [
     {
@@ -259,7 +335,7 @@ Memos are intended to be short-form posts similar to many social media platforms
   "tags": ["#intro"],
   "createdAt": "2025-03-01T12:00:00Z",
   "permissions": {
-    "editUntil": "2025-03-01T13:00Z"
+    "editUntil": "2025-03-01T13:00:00Z"
   },
   "metadata": []
 }
@@ -276,7 +352,7 @@ Articles are intended to be long-form posts similar to what you might find on a 
   "type": "article",
   "content": {
     "text": "# Welcome to...",
-    "mime": "text/markdown" // Or text/html
+    "mime": "text/markdown"
   },
   "attachments": [
     {
@@ -293,7 +369,7 @@ Articles are intended to be long-form posts similar to what you might find on a 
   "tags": ["#intro"],
   "createdAt": "2025-03-01T12:00:00Z",
   "permissions": {
-    "editUntil": "2025-03-01T13:00Z"
+    "editUntil": "2025-03-01T13:00:00Z"
   },
   "metadata": []
 }
@@ -309,12 +385,14 @@ Clients **SHOULD** format reactions within their associated messages.
 {
   "id": "rct_1",
   "author": "jane@a.com",
-  // Definitiosn are used for grouping reactions. A reaction with no image can simply use the unicode as a definition.
-  "definition": "reaction@a.com",
-  "unicode": "<3",
-  "desctription": "heart",
-  "image": "https://cdn...", // Can be an image or GIF
-  "reference": "msg_id",
+  "key": "heart",
+  "unicode": "❤️",
+  "image": "https://cdn...",
+  "reference": {
+    "type": "message",
+    "id": "msg_id"
+  },
+  "createdAt": "2025-03-01T12:00:00Z",
   "metadata": []
 }
 ```
@@ -327,7 +405,7 @@ Metadata can be attached to most objects to implement custom features. Such feat
 {
   "schema": "https://a.com/schemas/poll",
   "version": "1.0",
-  "data": { // Data can be anything
+  "data": {
     "question": "lunch?",
     "options": ["tacos", "ramen"]
   }
@@ -336,9 +414,160 @@ Metadata can be attached to most objects to implement custom features. Such feat
 
 ---
 
-## 6. Messaging Lifecycle
+## 6. User Privacy Endpoints (Profile, Presence, Membership Listing)
 
-### 6.1. Posting
+To support per-user privacy controls without overloading `UserProfile` fields, providers **MUST** implement the following endpoints.
+
+### 6.1. Visibility policy (shared)
+
+When a subject configures privacy for presence, profile extras (e.g. bio), or group memberships, providers **MUST** represent visibility using a small shared enum, with the values:
+
+* `public` — visible to anyone
+* `authenticated` — visible to any authenticated user
+* `sharedGroups` — visible only to viewers who share at least one group with the subject
+* `contacts` — visible only to DM contacts
+* `nobody` — visible to no one except the subject (and administrators as required)
+
+Providers **SHOULD** also implement an `allowList` and `denyList` that will override the privacy setting for users in these lists.
+
+### 6.2. Public profile endpoint
+
+```http
+GET /api/users/{userRef}/profile
+Authorization: Bearer <token>
+```
+
+**Response:** A `UserProfile` plus optional profile extras (such as `bio`) filtered by the subject’s profile visibility policy.
+
+Example response:
+```json
+{
+  "id": "https://a.com/api/users/usr_123",
+  "handle": "jane",
+  "domain": "a.com",
+  "displayName": "Jane Doe",
+  "avatar": "https://cdn...",
+  "bio": "Hello!",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
+}
+```
+
+### 6.3. Update my profile
+
+```http
+PATCH /api/me/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Example request:
+```json
+{
+  "displayName": "Jane Doe",
+  "avatar": "https://cdn...",
+  "bio": "Hello!",
+  "metadata": []
+}
+```
+
+### 6.4. Presence endpoint
+
+```http
+GET /api/users/{userRef}/presence
+Authorization: Bearer <token>
+```
+
+Presence data returned **MUST** be filtered by the subject’s presence visibility policy.
+
+Example response:
+```json
+{
+  "availability": "online",
+  "status": "Grinding @ work :/",
+  "lastSeen": "2025-03-01T12:00:00Z",
+  "metadata": []
+}
+```
+
+Update my presence:
+```http
+PUT /api/me/presence
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Example request:
+```json
+{
+  "availability": "away",
+  "status": "On vacation, see ya! ;)",
+  "metadata": []
+}
+```
+
+### 6.5. Group memberships visible to viewer
+
+```http
+GET /api/users/{userRef}/groups
+Authorization: Bearer <token>
+```
+
+Response **MUST** only include groups visible to the viewer per the subject’s membership visibility settings.
+
+Example response:
+```json
+{
+  "groups": [
+    {
+      "id": "https://a.com/api/groups/grp_1"
+    }
+  ],
+  "metadata": []
+}
+```
+
+### 6.6. Visibility settings (private)
+
+Providers **SHOULD** allow users to configure visibility for presence, bio/profile extras, and membership listing.
+
+```http
+GET /api/me/privacy
+Authorization: Bearer <token>
+```
+
+Example response:
+```json
+{
+  "presenceVisibility": "sharedGroups",
+  "profileVisibility": "public",
+  "membershipVisibility": "contacts",
+  "metadata": []
+}
+```
+
+Update:
+```http
+PUT /api/me/privacy
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Example request:
+```json
+{
+  "presenceVisibility": "sharedGroups",
+  "profileVisibility": "public",
+  "membershipVisibility": "contacts",
+  "metadata": []
+}
+```
+
+---
+
+## 7. Messaging Lifecycle
+
+### 7.1. Posting
 
 ```
 POST /api/groups/{groupId}/channels/{channelId}/messages
@@ -356,14 +585,41 @@ Provider flow:
    * User notification endpoints
    * Optional push/webhook integrations
 
-### 6.2. Reading
+### 7.2. Reading
+
+Pagination cursors **MUST** be opaque strings returned by the server.
 
 ```
-GET /api/groups/{groupId}/channels/{channelId}/messages?cursor=msg_20&direction=backward&limit=50
+GET /api/groups/{groupId}/channels/{channelId}/messages?cursor=opaqueCursorValue&direction=backward&limit=50
 ```
-Responses include pagination cursors and aggregated reactions.
 
-### 6.3. Error semantics
+Response example:
+```json
+{
+  "items": [],
+  "page": {
+    "nextCursor": "opaqueNextCursor",
+    "prevCursor": "opaquePrevCursor"
+  }
+}
+```
+
+### 7.3. Error semantics
+
+Providers **SHOULD** return errors using RFC 7807 Problem Details (`application/problem+json`) with stable `type` values.
+
+Example:
+```json
+{
+  "type": "https://ofscp.example/errors/invalid-payload",
+  "title": "Invalid payload",
+  "status": 400,
+  "detail": "Field 'content.text' is required",
+  "instance": "/api/groups/grp_1/channels/chn_general/messages"
+}
+```
+
+Common status codes:
 
 | Status | Meaning |
 | --- | --- |
@@ -374,52 +630,93 @@ Responses include pagination cursors and aggregated reactions.
 | 409 | Duplicate client message ID |
 | 503 | Provider temporarily unavailable |
 
-### 6.4. Real-time Updates
+### 7.4. Real-time Updates
 
 To receive new messages without polling, clients **SHOULD** connect to the event stream:
 
 ```
 GET /api/events?channels=chn_general,chn_voice
 Accept: text/event-stream
+Last-Event-ID: {optional-event-id}
 ```
 
-Events are pushed as Server-Sent Events (SSE):
+Events are pushed as Server-Sent Events (SSE). Providers **SHOULD** include `id:` lines so clients can resume using `Last-Event-ID`.
+
 * `message.created`
 * `message.updated`
+* `message.deleted`
 * `channel.typing`
 
 ---
 
-## 7. Federation Rules
+## 8. Federation Rules
 
-### 7.1. Remote channel participation
+### 8.0. Federation Request Authentication (Normative)
+
+Federated (provider-to-provider) requests **MUST** be authenticated.
+
+This specification standardizes on **HTTP Message Signatures (RFC 9421)** using **Ed25519**.
+
+#### Key discovery and rotation
+
+* Providers **MUST** publish one or more signing public keys in the discovery document `provider.publicKeys`.
+* Each key **MUST** include a stable `kid`.
+* Providers **SHOULD** overlap keys during rotation (publish old+new) for at least the maximum cache lifetime of discovery documents.
+* On signature verification failure, recipients **SHOULD** re-fetch the sender's discovery document before rejecting.
+
+#### Signature requirements
+
+Federation requests **MUST** include:
+
+* `Signature-Input` and `Signature` headers per RFC 9421
+* A `Date` header (or `@created` component) and recipients **MUST** enforce a maximum clock skew (RECOMMENDED: 300 seconds)
+
+The covered components **MUST** include:
+
+* `@method`
+* `@target-uri`
+* `content-digest` (for requests with a body)
+* `date` (or `@created`)
+
+#### Replay prevention
+
+Recipients **MUST** reject requests that are outside the allowed clock skew window.
+Recipients **SHOULD** additionally implement replay detection for a short window (RECOMMENDED: 5 minutes), keyed by `(providerDomain, signature, @created)`.
+
+#### Authorization
+
+Authentication proves the calling provider domain; authorization is still required:
+
+* Providers **MUST** apply allow/deny policy for which remote providers may federate.
+* Providers **MUST** enforce channel/group privacy tiers when serving federation traffic.
+
+### 8.1. Remote channel participation
 
 * Remote users access a channel via `POST /api/groups/{groupId}/channels/{channelId}/join` on the channel’s home provider.
-* Home provider authenticates the remote user by calling their home provider’s key endpoint.
+* Home provider authenticates the remote user by calling their home provider’s discovery document and verifying signed federation requests.
 
-### 7.2. Direct messages
+### 8.2. Direct messages
 
 * **Source of Truth:** The recipient's home provider acts as the authoritative store for a user's inbox.
 * **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`.
 * **Storage:** The recipient's provider stores the message.
 
-
-### 7.3. Broadcast & discoverability
+### 8.3. Broadcast & discoverability
 
 * Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks.
 * Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s privacy tier.
 
 ---
 
-## 8. Real-time Calls
+## 9. Real-time Calls
 
-### 8.1. Call channel state
+### 9.1. Call channel state
 
 ```json
 {
   "channel": "chn_voice",
   "call": {
-    "state": "inactive", // inactive | ringing | active
+    "state": "inactive",
     "participants": [
       {
         "user": "jane@a.com",
@@ -430,12 +727,12 @@ Events are pushed as Server-Sent Events (SSE):
         }
       }
     ],
-    "metadata": {}
+    "metadata": []
   }
 }
 ```
 
-### 8.2. Control APIs (Signaling)
+### 9.2. Control APIs (Signaling)
 
 These endpoints act as the signaling plane. Payloads are ephemeral and not persisted in the channel timeline.
 
@@ -448,11 +745,7 @@ Consumers exchange media peer-to-peer; providers act as signaling coordinators o
 
 ---
 
-
-
----
-
-## 9. Notifications
+## 10. Notifications
 
 Providers expose a webhook registration API:
 ```
@@ -479,7 +772,7 @@ Delivery payload:
 
 ---
 
-## 10. Privacy & Discoverability Tiers
+## 11. Privacy & Discoverability Tiers
 
 Privacy tiers are configured on a **per-channel** basis.
 
@@ -494,7 +787,7 @@ The following table lists **examples** of common configurations (non-normative s
 | Public | Visible to anyone with link | Read-only without join, but not broadcast. |
 | Discoverable | Searchable and syndicated | Providers publish updates to subscribers. |
 
-### 10.1. Tier Discovery
+### 11.1. Tier Discovery
 
 Providers **MUST** expose an endpoint (referenced in the discovery document) to list available tiers and their descriptions so clients can render them appropriately.
 
@@ -524,13 +817,12 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 
 ---
 
-## 11. Compliance Checklist
+## 12. Compliance Checklist
 
 ### Provider **MUST**
 
 - [ ] Serve `.well-known/ofscp-provider`
 - [ ] Support OAuth 2.0 OIDC flows
-
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier
@@ -540,7 +832,6 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 ### Client **MUST**
 
 - [ ] Support OAuth 2.0 authentication
-
 - [ ] Support all message types or graceful fallback
 
 ### Client **SHOULD**
@@ -551,7 +842,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 
 ---
 
-## 12. Future Work
+## 13. Future Work
 
 * Rich moderation APIs (ban lists, reporting)
 * Media relay + SFU guidelines for large calls

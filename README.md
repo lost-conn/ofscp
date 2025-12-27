@@ -6,7 +6,7 @@ This repository contains the specifications, schemas, and other reference materi
 
 ## Goals
 
-The primary goal of OFSCP is to provide an open and federated standard for online social communicatoins and managing online communities. It includes functionality like group messaging and video calls, and covers use-cases from forums, to blogs, to private messaging. All with modern real-time communication features and convenience that users expect.
+The primary goal of OFSCP is to provide an open and federated standard for online social communications and managing online communities. It includes functionality like group messaging and video calls, and covers use-cases from forums, to blogs, to private messaging. All with modern real-time communication features and convenience that users expect.
 
 OFSCP is focused on:
 

@@ -29,15 +29,21 @@
           "additionalProperties": true,
           "properties": {
             "issuer": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "authorization_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "token_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "userinfo_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+            "jwks_uri": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "login_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "introspection_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
+            "algorithms": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "audiences": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
           },
           "required": [
             "issuer",
-            "authorization_endpoint",
-            "token_endpoint",
-            "userinfo_endpoint"
+            "jwks_uri"
           ]
         },
         "publicKeys": {

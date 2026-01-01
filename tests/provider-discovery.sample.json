@@ -9,9 +9,10 @@
     "contact": "mailto:admin@social.example",
     "authentication": {
       "issuer": "https://social.example",
-      "authorization_endpoint": "https://social.example/oauth/authorize",
-      "token_endpoint": "https://social.example/oauth/token",
-      "userinfo_endpoint": "https://social.example/oauth/userinfo"
+      "jwks_uri": "https://social.example/.well-known/jwks.json",
+      "algorithms": ["RS256"],
+      "audiences": ["ofscp-api"],
+      "login_endpoint": "https://social.example/api/auth/login"
     },
     "publicKeys": [
       {

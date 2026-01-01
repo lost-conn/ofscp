@@ -106,9 +106,11 @@ Content-Type: application/json
     "contact": "mailto:admin@social.example",
     "authentication": {
       "issuer": "https://social.example",
-      "authorization_endpoint": "https://social.example/oauth/authorize",
-      "token_endpoint": "https://social.example/oauth/token",
-      "userinfo_endpoint": "https://social.example/oauth/userinfo"
+      "jwks_uri": "https://social.example/.well-known/jwks.json",
+      "algorithms": ["RS256"],
+      "audiences": ["ofscp-api"],
+      "login_endpoint": "https://social.example/api/auth/login",
+      "introspection_endpoint": "https://social.example/oauth/introspect"
     }
   },
   "capabilities": {
@@ -149,22 +151,156 @@ Providers **MAY** maintain a list of "Known Providers" to facilitate federation.
 
 ## 4. Identity & Authentication
 
-Clients use **OAuth 2.0** for session authentication (logging in).
+This specification standardizes **JWT Bearer access tokens** for API session authentication, including a required JWT profile, discovery metadata for offline verification, and federated validation rules.
 
-### 4.1. Account Registration & Login
+Providers are responsible for authenticating human users and issuing JWTs.
 
-1.  **Discovery:** Client fetches the discovery document to find the `authentication` endpoints.
-2.  **Authorization:** Client initiates an **OAuth 2.0 Authorization Code Flow** (PKCE recommended) by redirecting the user to `authorization_endpoint`.
-    *   Scopes: `openid profile offline_access ofscp`
-3.  **Token Exchange:** Client exchanges the code for an `access_token` and optional `refresh_token` at the `token_endpoint`.
+### 4.1. Authentication Flows
+
+OFSCP does not standardize how a provider authenticates a user interactively (passwords, passkeys, SSO, etc.).
+
+For interoperability, OFSCP standardizes the **token format** and how tokens are **validated across providers**.
+
+If a provider exposes interactive login endpoints, it **MUST** document them (if any) in discovery (see §4.5).
+
+Note: The `.well-known/ofscp-provider` example in §3.1 includes a `login_endpoint`. That field is OPTIONAL; providers that do not expose an interactive login endpoint MAY omit it.
 
 ### 4.2. Session Authentication
 
-*   Clients **MUST** authenticate API requests using the `Authorization: Bearer <token>` header.
-*   Providers **MUST** validate the token against the issued session.
-*   If the token expires, clients **SHOULD** use the refresh token or re-authenticate.
+*   Clients **MUST** authenticate API requests using the `Authorization: Bearer <JWT>` header.
+*   Providers **MUST** validate the JWT per §4.3 and §4.6 (signature, claims, and lifetime).
+*   If the JWT expires, clients **SHOULD** obtain a new JWT using the provider’s authentication mechanism.
 
-### 4.3. Federated User Lookup
+### 4.3. Normative JWT Profile
+
+Providers and clients MUST follow these minimum interoperability requirements.
+
+#### 4.3.1. Access tokens
+
+* Access tokens **MUST** be JWTs (RFC 7519).
+* Access tokens **MUST** be signed (JWS). Providers **MUST NOT** issue unsigned tokens (e.g. `alg: "none"`).
+* Providers **MUST** support `RS256`.
+* Providers **SHOULD** support `EdDSA`.
+* Providers **MUST NOT** use `HS256` in federated deployments.
+* Providers **SHOULD** issue short-lived access tokens (RECOMMENDED: `exp` 5–15 minutes after issuance).
+
+#### 4.3.2. Required JWT claims
+
+Issued JWT access tokens **MUST** include:
+* `iss` (issuer): absolute HTTPS URL identifying the issuing provider.
+* `sub` (subject): stable, opaque identifier for the authenticated user.
+* `aud` (audience): identifies the intended recipient provider/API (see §4.3.4).
+* `exp`, `iat`.
+
+Issued JWT access tokens **SHOULD** include:
+* `jti` (token identifier) for audit/revocation correlation.
+* `scope` (space-separated string) or `scp` (array) describing granted scopes.
+
+Providers **MAY** include convenience claims like `preferred_username`, but clients/remote providers **MUST NOT** rely on them for authorization decisions.
+
+#### 4.3.3. Subject identifier format
+
+For federation compatibility, `sub` **MUST** be globally unique under `iss`.
+
+Providers **SHOULD** use a URI identifier consistent with OFSCP canonical identifiers.
+
+Example:
+* `iss`: `https://a.com`
+* `sub`: `https://a.com/api/users/usr_123`
+
+#### 4.3.4. Audience rules
+
+Remote providers validating tokens **MUST** validate `aud`.
+
+If a client calls Remote Provider B with a token minted by Provider A, the access token presented to B **MUST** include an `aud` value that matches B (either B’s base URL or a provider-defined audience published in discovery).
+
+#### 4.3.5. Transport
+
+* JWTs **MUST** be sent only via the `Authorization` header.
+* Clients **MUST NOT** send JWTs in query parameters.
+
+#### 4.3.6. Error semantics
+
+* Invalid or missing JWT: respond with **401**.
+* Valid JWT but insufficient permissions: respond with **403**.
+
+### 4.4. Provider Discovery Additions for JWT Verification
+
+Providers MUST publish JWT verification metadata in `.well-known/ofscp-provider`.
+
+The `provider.authentication` object:
+* `issuer` (REQUIRED): the `iss` value remote providers/clients should expect.
+* `jwks_uri` (REQUIRED): absolute HTTPS URL of JWKS endpoint.
+* `algorithms` (OPTIONAL): list of supported JWT `alg` values.
+* `audiences` (OPTIONAL): acceptable `aud` values for this provider’s APIs.
+* `introspection_endpoint` (OPTIONAL): token introspection endpoint for immediate revocation checks.
+
+Note: interactive login endpoints are not required by this spec; if provided, they SHOULD be documented (see §4.5).
+
+#### 4.4.1. Example
+
+```json
+{
+  "provider": {
+    "authentication": {
+      "issuer": "https://social.example",
+      "jwks_uri": "https://social.example/.well-known/jwks.json",
+      "algorithms": ["RS256"],
+      "audiences": ["ofscp-api"],
+      "introspection_endpoint": "https://social.example/oauth/introspect"
+    }
+  }
+}
+```
+
+### 4.5. Provider Authentication Discovery (Interactive)
+
+If a provider exposes an interactive login endpoint intended for first-party clients, it **SHOULD** publish it in discovery as:
+* `provider.authentication.login_endpoint` (OPTIONAL): HTTPS endpoint for interactive login.
+
+The request/response format of interactive login endpoints is provider-defined.
+
+### 4.6. Remote Provider Validation Rules (Federation)
+
+When a Remote Provider B receives a Bearer token issued by Provider A, B **MUST**:
+1. Resolve A’s discovery document (`/.well-known/ofscp-provider`) and cache it.
+2. Fetch A’s JWKS and cache it, honoring HTTP caching headers.
+3. Verify JWT signature using JWKS.
+4. Validate:
+   * `iss` matches A’s issuer
+   * `aud` matches B
+   * `exp` not expired (allow small clock skew, RECOMMENDED: ≤ 60s)
+5. Map `sub` to a federated user identity.
+
+B **SHOULD** treat token claims as authentication only; authorization remains local policy.
+
+### 4.7. Refresh tokens, rotation, and revocation (Guidance)
+
+Providers **SHOULD** support refresh tokens for interactive clients.
+
+If refresh tokens are supported:
+* Refresh tokens **SHOULD** be opaque, random, and stored server-side.
+* Providers **SHOULD** rotate refresh tokens (one-time-use) and detect replay.
+
+Because JWT access tokens are valid until `exp`, providers **SHOULD** implement at least one of:
+* short-lived access tokens (RECOMMENDED above)
+* an introspection endpoint (OPTIONAL) for immediate revocation checks
+* `jti` denylist for high-risk endpoints
+
+Remote providers **MAY** call introspection for sensitive actions.
+
+### 4.8. Authentication errors (Problem Details)
+
+For auth failures, providers **SHOULD** return RFC 7807 `application/problem+json`.
+
+Recommended problem types:
+* `https://{provider}/problems/auth/missing-authorization`
+* `https://{provider}/problems/auth/invalid-token`
+* `https://{provider}/problems/auth/insufficient-scope`
+
+Include `status` (401/403), `title`, `detail`, and optional `errorCode`.
+
+### 4.9. Federated User Lookup
 
 When a remote provider needs to verify a user:
 
@@ -822,7 +958,8 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 ### Provider **MUST**
 
 - [ ] Serve `.well-known/ofscp-provider`
-- [ ] Support OAuth 2.0 OIDC flows
+- [ ] Issue and validate JWT Bearer tokens for API authentication
+- [ ] Publish JWT validation parameters via discovery (`issuer`, and `jwks_uri` for asymmetric signing)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier
@@ -831,7 +968,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 
 ### Client **MUST**
 
-- [ ] Support OAuth 2.0 authentication
+- [ ] Support JWT Bearer authentication (`Authorization: Bearer <JWT>`)
 - [ ] Support all message types or graceful fallback
 
 ### Client **SHOULD**

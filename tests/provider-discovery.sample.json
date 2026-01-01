@@ -31,11 +31,5 @@
         "uri": "https://social.example/meta/poll.json"
       }
     ]
-  },
-  "endpoints": {
-    "identity": "https://social.example/api/identity",
-    "groups": "https://social.example/api/groups",
-    "notifications": "https://social.example/api/notifications",
-    "tiers": "https://social.example/api/tiers"
   }
 }

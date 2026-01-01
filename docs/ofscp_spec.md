@@ -122,12 +122,7 @@ Content-Type: application/json
         "uri": "https://social.example/meta/poll.json"
       }
     ]
-  },
-  "endpoints": {
-    "identity": "https://social.example/api/identity",
-    "groups": "https://social.example/api/groups",
-    "notifications": "https://social.example/api/notifications",
-    "tiers": "https://social.example/api/tiers"
+
   }
 }
 ```
@@ -136,11 +131,27 @@ Providers **MUST** include a `protocolVersion` matching this specification’s S
 
 Clients **MAY** cache discovery documents, but providers **SHOULD** set HTTP caching headers (e.g. `Cache-Control`, `ETag`).
 
-### 3.2. Provider Descriptor Schema
+### 3.2. Standard API base path (Normative)
 
-The discovery payload above is the canonical schema. Additional capability sections **MAY** be added, but unknown fields **MUST** be ignored by clients.
+To simplify client implementation and improve interoperability, OFSCP **standardizes** the HTTP API endpoint paths.
 
-### 3.3. Provider Interconnection
+Providers **MUST** implement the standard endpoints exactly as specified in this document, relative to their domain (e.g. `https://{provider}`), and **MUST NOT** require clients to read per-resource endpoint URLs from discovery for core APIs.
+
+The base path for all standardized HTTP APIs is:
+
+* `https://{provider}/api/...`
+
+Providers **MAY** expose additional, non-standard endpoints, but those endpoints are out of scope for this specification.
+
+### 3.3. Provider Descriptor Schema
+
+The discovery payload above is the canonical schema.
+
+Discovery is intended to communicate provider identity, supported protocol version, authentication verification parameters, and optional capability metadata.
+
+Discovery **MUST NOT** be used to redefine the standardized endpoint paths in this specification.
+
+### 3.4. Provider Interconnection
 
 Providers **MAY** maintain a list of "Known Providers" to facilitate federation. This list can optionally be populated via:
 1.  **Manual Peering:** Administrators explicitly adding trusted domains.

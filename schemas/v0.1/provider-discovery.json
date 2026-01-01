@@ -94,14 +94,8 @@
     "endpoints": {
       "type": "object",
       "additionalProperties": true,
-      "properties": {
-      "identity": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-      "groups": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-      "notifications": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-      "tiers": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
-      },
-      "required": ["identity", "groups", "notifications", "tiers"]
+      "description": "Deprecated. Core API endpoints are standardized relative to provider domain (see spec). Providers SHOULD NOT include this section; clients MUST ignore it if present."
     }
   },
-  "required": ["provider", "capabilities", "endpoints"]
+  "required": ["provider", "capabilities"]
 }

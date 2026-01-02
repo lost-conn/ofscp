@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/types.json",
+  "title": "OFSCP WS message type enums (v0.1)",
+  "type": "object",
+  "$defs": {
+    "WsCommandType": {
+      "type": "string",
+      "enum": ["subscribe", "unsubscribe", "message.create", "typing.start", "typing.stop"]
+    },
+    "WsEventType": {
+      "type": "string",
+      "enum": [
+        "subscribed",
+        "unsubscribed",
+        "message.created",
+        "message.updated",
+        "message.deleted",
+        "channel.typing",
+        "error"
+      ]
+    },
+    "WsType": {
+      "type": "string",
+      "enum": [
+        "subscribe",
+        "unsubscribe",
+        "message.create",
+        "typing.start",
+        "typing.stop",
+        "subscribed",
+        "unsubscribed",
+        "message.created",
+        "message.updated",
+        "message.deleted",
+        "channel.typing",
+        "error"
+      ]
+    }
+  }
+}

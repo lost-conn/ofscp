@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/unsubscribed.json",
+  "title": "OFSCP WS unsubscribed event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "unsubscribed" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["channels"],
+          "properties": {
+            "channels": {
+              "type": "array",
+              "minItems": 0,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

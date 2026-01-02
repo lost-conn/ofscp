@@ -1,0 +1,20 @@
+{
+  "id": "evt_201",
+  "type": "message.created",
+  "ts": "2026-01-01T12:00:00Z",
+  "correlationId": "cli_200",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_general",
+    "message": {
+      "id": "msg_999",
+      "clientMessageId": "cmsg_abc123",
+      "author": "jane@a.com",
+      "createdAt": "2026-01-01T12:00:00Z",
+      "content": {
+        "type": "text/plain",
+        "text": "hi"
+      }
+    }
+  }
+}

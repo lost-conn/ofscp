@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/message-created.json",
+  "title": "OFSCP WS message.created event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "message.created" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["groupId", "channelId", "message"],
+          "properties": {
+            "groupId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "string", "minLength": 1 },
+            "message": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["id", "author", "createdAt", "content"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "clientMessageId": { "type": "string", "minLength": 1 },
+                "author": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+                "createdAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
+                "content": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "required": ["type", "text"],
+                  "properties": {
+                    "type": { "$ref": "../defs/common.json#/$defs/MimeType" },
+                    "text": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/error.json",
+  "title": "OFSCP WS error event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "error" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["code", "message", "status"],
+          "properties": {
+            "code": { "type": "string", "minLength": 1 },
+            "message": { "type": "string", "minLength": 1 },
+            "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+            "details": {
+              "type": ["object", "array", "string", "number", "boolean", "null"],
+              "description": "Optional machine-readable error details."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

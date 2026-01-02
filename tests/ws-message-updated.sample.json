@@ -1,0 +1,18 @@
+{
+  "id": "evt_202",
+  "type": "message.updated",
+  "ts": "2026-01-01T12:00:00Z",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_general",
+    "message": {
+      "id": "msg_999",
+      "author": "jane@a.com",
+      "createdAt": "2026-01-01T12:00:00Z",
+      "content": {
+        "type": "text/plain",
+        "text": "edited"
+      }
+    }
+  }
+}

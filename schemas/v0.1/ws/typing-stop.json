@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/typing-stop.json",
+  "title": "OFSCP WS typing.stop command (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "typing.stop" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["channelId"],
+          "properties": {
+            "channelId": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  ]
+}

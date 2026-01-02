@@ -73,7 +73,21 @@ async function main() {
     ['tests/call-channel-state.sample.json', 'schemas/v0.1/call-channel-state.json'],
     ['tests/call-offer.sample.json', 'schemas/v0.1/call-offer.json'],
     ['tests/call-answer.sample.json', 'schemas/v0.1/call-answer.json'],
-    ['tests/call-ice.sample.json', 'schemas/v0.1/call-ice.json']
+    ['tests/call-ice.sample.json', 'schemas/v0.1/call-ice.json'],
+
+    // WebSocket realtime messaging (v0.1)
+    ['tests/ws-subscribe.sample.json', 'schemas/v0.1/ws/subscribe.json'],
+    ['tests/ws-unsubscribe.sample.json', 'schemas/v0.1/ws/unsubscribe.json'],
+    ['tests/ws-subscribed.sample.json', 'schemas/v0.1/ws/subscribed.json'],
+    ['tests/ws-unsubscribed.sample.json', 'schemas/v0.1/ws/unsubscribed.json'],
+    ['tests/ws-message-create.sample.json', 'schemas/v0.1/ws/message-create.json'],
+    ['tests/ws-message-created.sample.json', 'schemas/v0.1/ws/message-created.json'],
+    ['tests/ws-message-updated.sample.json', 'schemas/v0.1/ws/message-updated.json'],
+    ['tests/ws-message-deleted.sample.json', 'schemas/v0.1/ws/message-deleted.json'],
+    ['tests/ws-typing-start.sample.json', 'schemas/v0.1/ws/typing-start.json'],
+    ['tests/ws-typing-stop.sample.json', 'schemas/v0.1/ws/typing-stop.json'],
+    ['tests/ws-channel-typing.sample.json', 'schemas/v0.1/ws/channel-typing.json'],
+    ['tests/ws-error.sample.json', 'schemas/v0.1/ws/error.json']
   ];
 
   for (const [samplePath, schemaPath] of cases) {

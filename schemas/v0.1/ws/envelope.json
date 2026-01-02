@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/envelope.json",
+  "title": "OFSCP WebSocket Message Envelope (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "type", "ts", "data"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique message identifier within a WebSocket connection. For client commands this is client-generated; for server events this is server-generated."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "WebSocket message type string."
+    },
+    "ts": {
+      "$ref": "../defs/common.json#/$defs/Rfc3339DateTime"
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional correlation identifier. For request/response interactions, providers SHOULD echo the client command `id` here."
+    },
+    "data": {
+      "type": ["object", "array", "string", "number", "boolean", "null"],
+      "description": "Message payload. Schema is determined by `type`."
+    }
+  }
+}

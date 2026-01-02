@@ -714,23 +714,182 @@ Example request:
 
 ## 7. Messaging Lifecycle
 
-### 7.1. Posting
+### 7.1. WebSocket real-time messaging (Normative)
+
+OFSCP standardizes real-time messaging over **WebSockets**.
+
+Providers **MUST** expose a WebSocket endpoint at:
 
 ```
-POST /api/groups/{groupId}/channels/{channelId}/messages
-Authorization: Bearer {token}
-Idempotency-Key: {uuid}
-Body: message object
+wss://{providerDomain}/api/ws
 ```
 
-Provider flow:
-1. Validate permissions → reject with **403** if the user lacks access.
-2. Persist the message into the channel timeline.
-3. Fan-out to:
-   * Local followers/subscribers
-   * Remote providers subscribed to the channel
-   * User notification endpoints
-   * Optional push/webhook integrations
+#### Authentication
+
+Connections **MUST** be authenticated using a JWT access token.
+
+* Clients **SHOULD** authenticate via the `Authorization: Bearer <token>` header during the WebSocket upgrade.
+* If a client environment cannot set headers, providers **MAY** accept a `?access_token=<token>` query parameter.
+  * This **MUST** only be accepted over TLS (`wss://`).
+
+Providers **MUST** close the connection if authentication fails.
+
+#### WebSocket message envelope
+
+All client→server commands and server→client events **MUST** use this JSON envelope:
+
+```json
+{
+  "id": "evt_or_cli_id",
+  "type": "message.created",
+  "ts": "2026-01-01T12:00:00Z",
+  "correlationId": "optional_client_id",
+  "data": {}
+}
+```
+
+Rules:
+
+* `id` **MUST** be unique within a connection.
+* `type` **MUST** be a stable string.
+* `ts` **MUST** be an RFC3339 timestamp.
+* `correlationId` **SHOULD** be included in responses that correspond to a specific client request.
+
+Clients **MUST** ignore unknown fields.
+
+#### WebSocket message types (Normative)
+
+All WebSocket payloads **MUST** use the message envelope described above.
+
+The `type` field **MUST** be one of the following standardized strings.
+
+##### Client → Server command types
+
+| type | Description | data schema |
+| --- | --- | --- |
+| `subscribe` | Subscribe this connection to one or more channel streams. | `WsSubscribe` |
+| `unsubscribe` | Unsubscribe this connection from one or more channel streams. | `WsUnsubscribe` |
+| `message.create` | Create (post) a message into a channel timeline. | `WsMessageCreate` |
+| `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
+| `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
+
+##### Server → Client event types
+
+| type | Description | data schema |
+| --- | --- | --- |
+| `subscribed` | Acknowledgement of a successful `subscribe`. | `WsSubscribed` |
+| `unsubscribed` | Acknowledgement of a successful `unsubscribe`. | `WsUnsubscribed` |
+| `message.created` | A message was created in a subscribed channel. | `WsMessageCreated` |
+| `message.updated` | A message was updated in a subscribed channel. | `WsMessageUpdated` |
+| `message.deleted` | A message was deleted in a subscribed channel. | `WsMessageDeleted` |
+| `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
+| `error` | Request-scoped error response. | `WsError` |
+
+Rules:
+
+* Providers **MUST** implement all event types listed above that correspond to the commands they support.
+  * Example: a provider that supports `message.create` **MUST** emit `message.created`.
+* Providers **MAY** emit additional `type` values; clients **MUST** ignore unknown types.
+* For request/response style interactions (e.g. `subscribe`, `message.create`), providers **SHOULD** echo the client’s request `id` in `correlationId`.
+
+#### Subscriptions
+
+Clients **MUST** subscribe to one or more channels to receive message and typing events.
+
+Client → Server:
+```json
+{
+  "id": "cli_001",
+  "type": "subscribe",
+  "data": {
+    "channels": ["chn_general"],
+    "include": ["message.created", "message.updated", "message.deleted", "channel.typing"]
+  }
+}
+```
+
+Server → Client:
+```json
+{
+  "id": "evt_100",
+  "type": "subscribed",
+  "correlationId": "cli_001",
+  "ts": "2026-01-01T12:00:00Z",
+  "data": { "channels": ["chn_general"] }
+}
+```
+
+Providers **MUST** enforce authorization at subscription-time and reject unauthorized subscriptions.
+
+Unsubscribe:
+```json
+{
+  "id": "cli_002",
+  "type": "unsubscribe",
+  "data": { "channels": ["chn_general"] }
+}
+```
+
+#### Sending messages
+
+Posting a message is a WebSocket command.
+
+Client → Server:
+```json
+{
+  "id": "cli_200",
+  "type": "message.create",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_general",
+    "clientMessageId": "cmsg_abc123",
+    "content": { "type": "text/plain", "text": "hi" }
+  }
+}
+```
+
+Server → Client event (fan-out to all subscribed clients, including the author):
+```json
+{
+  "id": "evt_201",
+  "type": "message.created",
+  "correlationId": "cli_200",
+  "ts": "2026-01-01T12:00:00Z",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_general",
+    "message": {
+      "id": "msg_999",
+      "clientMessageId": "cmsg_abc123",
+      "author": "user:alice",
+      "createdAt": "2026-01-01T12:00:00Z",
+      "content": { "type": "text/plain", "text": "hi" }
+    }
+  }
+}
+```
+
+Idempotency:
+
+* Clients **SHOULD** set `clientMessageId`.
+* Providers **MUST** treat `(author, channelId, clientMessageId)` as idempotent and respond with the canonical message if a duplicate is received.
+
+#### Typing indicators
+
+Client → Server:
+```json
+{ "id": "cli_300", "type": "typing.start", "data": { "channelId": "chn_general" } }
+```
+
+Server → Subscribers:
+```json
+{
+  "id": "evt_301",
+  "type": "channel.typing",
+  "ts": "2026-01-01T12:00:00Z",
+  "data": { "channelId": "chn_general", "user": "user:alice", "state": "start" }
+}
+```
 
 ### 7.2. Reading
 
@@ -777,22 +936,24 @@ Common status codes:
 | 409 | Duplicate client message ID |
 | 503 | Provider temporarily unavailable |
 
-### 7.4. Real-time Updates
+#### WebSocket error messages
 
-To receive new messages without polling, clients **SHOULD** connect to the event stream:
+Providers **SHOULD** return errors as WebSocket messages with `type: "error"`.
 
+Example:
+```json
+{
+  "id": "evt_err_1",
+  "type": "error",
+  "correlationId": "cli_200",
+  "ts": "2026-01-01T12:00:00Z",
+  "data": {
+    "code": "forbidden",
+    "message": "No access to channel chn_general",
+    "status": 403
+  }
+}
 ```
-GET /api/events?channels=chn_general,chn_voice
-Accept: text/event-stream
-Last-Event-ID: {optional-event-id}
-```
-
-Events are pushed as Server-Sent Events (SSE). Providers **SHOULD** include `id:` lines so clients can resume using `Last-Event-ID`.
-
-* `message.created`
-* `message.updated`
-* `message.deleted`
-* `channel.typing`
 
 ---
 

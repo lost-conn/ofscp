@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/ofscp/schemas/v0.1/device-key-registration.json",
+    "title": "OFSCP Device Key Registration Request",
+    "type": "object",
+    "properties": {
+        "public_key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Base64-encoded Ed25519 public key"
+        },
+        "device_name": {
+            "type": "string",
+            "description": "Human-readable device description"
+        }
+    },
+    "required": [
+        "public_key",
+        "device_name"
+    ],
+    "additionalProperties": true
+}

@@ -87,7 +87,14 @@ async function main() {
     ['tests/ws-typing-start.sample.json', 'schemas/v0.1/ws/typing-start.json'],
     ['tests/ws-typing-stop.sample.json', 'schemas/v0.1/ws/typing-stop.json'],
     ['tests/ws-channel-typing.sample.json', 'schemas/v0.1/ws/channel-typing.json'],
-    ['tests/ws-error.sample.json', 'schemas/v0.1/ws/error.json']
+    ['tests/ws-error.sample.json', 'schemas/v0.1/ws/error.json'],
+
+    // Authentication & Device Keys
+    ['tests/auth-registration-request.sample.json', 'schemas/v0.1/auth-registration-request.json'],
+    ['tests/auth-login-request.sample.json', 'schemas/v0.1/auth-login-request.json'],
+    ['tests/device-key-registration.sample.json', 'schemas/v0.1/device-key-registration.json'],
+    ['tests/device-key-response.sample.json', 'schemas/v0.1/device-key-response.json'],
+    ['tests/user-keys-response.sample.json', 'schemas/v0.1/user-keys-response.json']
   ];
 
   for (const [samplePath, schemaPath] of cases) {

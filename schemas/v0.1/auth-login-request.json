@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/ofscp/schemas/v0.1/auth-login-request.json",
+    "title": "OFSCP Authentication Login Request",
+    "type": "object",
+    "properties": {
+        "handle": {
+            "type": "string",
+            "minLength": 1
+        },
+        "password": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "handle",
+        "password"
+    ],
+    "additionalProperties": false
+}

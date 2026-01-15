@@ -559,6 +559,36 @@ Metadata can be attached to most objects to implement custom features. Such feat
 }
 ```
 
+### 5.5. Group Endpoints
+
+#### GET /api/groups/{groupId}
+
+Fetches metadata for a single group.
+
+**Authorization:**
+- Public groups (`discoverability: "public"` or `"discoverable"`): No authentication required
+- Private groups (`discoverability: "private"` or `"group"`): Requires valid authentication and the caller must be a group member
+
+**Response (200 OK):**
+```json
+{
+  "id": "grp_abc123",
+  "name": "My Group",
+  "description": "A group for discussion",
+  "owner": "@alice@provider.example",
+  "joinPolicy": "open",
+  "discoverability": "public",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+**Errors:**
+- `404 Not Found`: Group does not exist
+- `403 Forbidden`: Private group and caller is not a member
+
+**Federation:** Remote providers MAY query this endpoint to display group info to users considering joining. Providers MUST enforce discoverability rules for federated requests.
+
 ---
 
 ## 6. User Privacy Endpoints (Profile, Presence, Membership Listing)

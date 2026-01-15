@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/ofscp/schemas/v0.1/user-keys-response.json",
+    "title": "OFSCP User Public Keys Response",
+    "type": "object",
+    "properties": {
+        "actor": {
+            "$ref": "./defs/identity.json#/$defs/UserRef"
+        },
+        "keys": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "Ed25519"
+                        ]
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "created_at": {
+                        "$ref": "./defs/common.json#/$defs/Rfc3339DateTime"
+                    }
+                },
+                "required": [
+                    "key_id",
+                    "algorithm",
+                    "public_key",
+                    "created_at"
+                ]
+            }
+        },
+        "cache_until": {
+            "$ref": "./defs/common.json#/$defs/Rfc3339DateTime"
+        }
+    },
+    "required": [
+        "actor",
+        "keys",
+        "cache_until"
+    ],
+    "additionalProperties": true
+}

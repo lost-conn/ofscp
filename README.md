@@ -46,6 +46,22 @@ And, most importantly, what if all of these things were tied together, so you on
 
 This is what OFSCP aims to provide. A way to put content and communities back into the hands of creators and people, not platforms. All *without* sacrificing the modern convenience that these platforms provide.
 
+## Implementations
+
+Projects that have implemented OFSCP, whether you're looking for example code or one to use. Keep in mind that OFSCP is still in its early stages, so I wouldn't expect these to be very useable yet.
+
+### Providers
+
+- [Forumall](https://github.com/lost-conn/forumall)
+  An easily-deployable provider with a web client embedded.
+
+### Clients
+
+- [Forumall](https://github.com/lost-conn/forumall)
+  See above.
+
+Working on an implementation of your own? I'd love to know about it, feel free to make a PR!
+
 ## Contributing
 
 This spec is still under active development and no doubt needs a lot of refining. Please feel free to offer suggestions and feedback.

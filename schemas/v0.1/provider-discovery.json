@@ -9,7 +9,10 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "domain": { "type": "string", "minLength": 1 },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
         "protocolVersion": {
           "type": "string",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
@@ -18,32 +21,34 @@
           "type": "object",
           "additionalProperties": true,
           "properties": {
-            "name": { "type": "string" },
-            "version": { "type": "string" }
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
           },
-          "required": ["name", "version"]
+          "required": [
+            "name",
+            "version"
+          ]
         },
-        "contact": { "type": "string" },
+        "contact": {
+          "type": "string"
+        },
         "authentication": {
           "type": "object",
           "additionalProperties": true,
           "properties": {
-            "issuer": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "jwks_uri": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "login_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "introspection_endpoint": { "$ref": "./defs/common.json#/$defs/HttpsUri" },
-            "algorithms": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+            "login_endpoint": {
+              "$ref": "./defs/common.json#/$defs/HttpsUri"
             },
-            "audiences": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+            "registration_endpoint": {
+              "$ref": "./defs/common.json#/$defs/HttpsUri"
             }
           },
           "required": [
-            "issuer",
-            "jwks_uri"
+            "login_endpoint"
           ]
         },
         "publicKeys": {
@@ -52,15 +57,36 @@
             "type": "object",
             "additionalProperties": true,
             "properties": {
-              "kid": { "type": "string", "minLength": 1 },
-              "alg": { "type": "string", "enum": ["Ed25519"] },
-              "publicKey": { "type": "string", "minLength": 1 }
+              "kid": {
+                "type": "string",
+                "minLength": 1
+              },
+              "alg": {
+                "type": "string",
+                "enum": [
+                  "Ed25519"
+                ]
+              },
+              "publicKey": {
+                "type": "string",
+                "minLength": 1
+              }
             },
-            "required": ["kid", "alg", "publicKey"]
+            "required": [
+              "kid",
+              "alg",
+              "publicKey"
+            ]
           }
         }
       },
-      "required": ["domain", "protocolVersion", "software", "contact", "authentication"]
+      "required": [
+        "domain",
+        "protocolVersion",
+        "software",
+        "contact",
+        "authentication"
+      ]
     },
     "capabilities": {
       "type": "object",
@@ -70,23 +96,38 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["memo", "article", "message", "reaction"]
+            "enum": [
+              "memo",
+              "article",
+              "message",
+              "reaction"
+            ]
           }
         },
-          "discoverability": {
-            "type": "array",
-            "items": { "$ref": "./defs/common.json#/$defs/Discoverability" }
-          },
+        "discoverability": {
+          "type": "array",
+          "items": {
+            "$ref": "./defs/common.json#/$defs/Discoverability"
+          }
+        },
         "metadataSchemas": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": true,
             "properties": {
-              "id": { "type": "string", "minLength": 1 },
-              "uri": { "$ref": "./defs/common.json#/$defs/HttpsUri" }
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uri": {
+                "$ref": "./defs/common.json#/$defs/HttpsUri"
+              }
             },
-            "required": ["id", "uri"]
+            "required": [
+              "id",
+              "uri"
+            ]
           }
         }
       }
@@ -97,5 +138,8 @@
       "description": "Deprecated. Core API endpoints are standardized relative to provider domain (see spec). Providers SHOULD NOT include this section; clients MUST ignore it if present."
     }
   },
-  "required": ["provider", "capabilities"]
+  "required": [
+    "provider",
+    "capabilities"
+  ]
 }

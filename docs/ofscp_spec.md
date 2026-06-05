@@ -1279,6 +1279,12 @@ Recipients **MAY** cache discovery per its HTTP caching headers, but **MUST** re
 * **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`.
 * **Storage:** The recipient's provider stores the message.
 
+#### Confidentiality (Normative)
+
+OFSCP v0.1 does **not** provide end-to-end encryption. DMs are stored by, and readable by, the recipient's home provider (the same trust model as most mainstream chat platforms). Transport **MUST** still be protected by TLS, and senders **MUST NOT** assume DMs are private from the recipient's provider operator. Clients **SHOULD** make this trust boundary clear to users.
+
+The device keys of §4 are **signing-only** (Ed25519) in v0.1. The design intentionally reserves room for end-to-end encryption in a future version without a breaking change: a device **MAY** later publish an additional X25519 encryption key alongside its signing key, and encrypted messages **MAY** be carried as an opaque `content` type that providers store and relay without interpreting (consistent with the forward-compatibility rules of §2.3). Specifying that protocol is out of scope for v0.1 (see §13).
+
 ### 8.4. Broadcast & discoverability
 
 * Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
@@ -1475,6 +1481,7 @@ Client                Remote Provider              Home Provider
 
 ## 13. Future Work
 
+* End-to-end encryption for DMs (X25519 device encryption keys + prekey bundles + Double Ratchet or MLS); see §8.3 for the reserved hooks
 * Rich moderation APIs (ban lists, reporting)
 * Media relay + SFU guidelines for large calls
 * Schema registry governance

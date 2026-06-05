@@ -109,7 +109,15 @@ Content-Type: application/json
     "authentication": {
       "login_endpoint": "https://social.example/api/auth/login",
       "registration_endpoint": "https://social.example/api/auth/register"
-    }
+    },
+    "publicKeys": [
+      {
+        "key_id": "psk-2025-01",
+        "algorithm": "Ed25519",
+        "public_key": "<base64-encoded public key>",
+        "created_at": "2025-01-01T00:00:00Z"
+      }
+    ]
   },
   "capabilities": {
     "messageTypes": ["memo", "article", "message", "reaction"],
@@ -1199,20 +1207,41 @@ Authentication proves the calling provider domain; authorization is still requir
 * Providers **MUST** apply allow/deny policy for which remote providers may federate.
 * Providers **MUST** enforce channel/group privacy tiers when serving federation traffic.
 
-### 8.1. Remote channel participation
+### 8.1. Provider Signing Identity
+
+Federation involves two kinds of signer:
+
+* **User-signed** requests act on behalf of a specific user (e.g. a remote user joining a channel). They use the user's device key and are verified via the user keys endpoint (§4.6).
+* **Provider-signed** requests act on behalf of the **provider itself**, where no single user is the actor — discoverable-feed delivery (§8.4) and notification webhook delivery (§10). They use the provider's signing key.
+
+Every provider **MUST** publish one or more Ed25519 signing keys in its discovery document under `provider.publicKeys` (§3.1), each with `key_id`, `algorithm`, `public_key`, and an OPTIONAL `created_at`. Providers **MAY** publish multiple keys to support rotation.
+
+A provider-signed request uses the **same canonical string and rules as §4.4.2**, with a single header difference:
+
+* `X-OFSCP-Provider`: the signing provider's domain (replaces `X-OFSCP-Actor`).
+* `X-OFSCP-Key-ID`, `X-OFSCP-Timestamp`, `X-OFSCP-Nonce`, `X-OFSCP-Content-Digest`, `X-OFSCP-Signature`: exactly as in §4.4.1.
+
+To verify, the recipient:
+
+1. Performs §4.5 steps 1–5 (header presence, authority match, timestamp skew, nonce replay, body digest).
+2. Fetches the signing provider's discovery document, selects the `provider.publicKeys` entry matching `X-OFSCP-Key-ID`, and verifies the Ed25519 signature (as in §4.5 step 7).
+
+Recipients **MAY** cache discovery per its HTTP caching headers, but **MUST** re-fetch on a verification failure for a `key_id` they believe should be valid (mirroring §4.6) so key rotation is picked up promptly.
+
+### 8.2. Remote channel participation
 
 * Remote users access a channel via `POST /api/groups/{groupId}/channels/{channelId}/join` on the channel’s home provider.
 * Home provider authenticates the remote user by calling their home provider’s discovery document and verifying signed federation requests.
 
-### 8.2. Direct messages
+### 8.3. Direct messages
 
 * **Source of Truth:** The recipient's home provider acts as the authoritative store for a user's inbox.
 * **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`.
 * **Storage:** The recipient's provider stores the message.
 
-### 8.3. Broadcast & discoverability
+### 8.4. Broadcast & discoverability
 
-* Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks.
+* Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
 * Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s privacy tier.
 
 ---
@@ -1279,6 +1308,8 @@ Delivery payload:
 }
 ```
 
+Delivery requests **MUST** be **provider-signed** (§8.1): the originating provider signs the HTTP delivery request with its signing key, and the receiver verifies it against the originating provider's `provider.publicKeys` (§3.1). The `provider` field names the signer and the `signature` field carries the originating provider's detached Ed25519 signature (base64) over the canonical delivery payload, so a stored payload remains verifiable independent of transport.
+
 ---
 
 ## 11. Privacy & Discoverability Tiers
@@ -1337,6 +1368,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Authenticate WebSocket connections via the signed `auth.challenge`/`authenticate` handshake (§7.1)
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
+- [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier

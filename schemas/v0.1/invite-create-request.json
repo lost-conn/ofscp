@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/invite-create-request.json",
+  "title": "OFSCP Invite Create Request (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "channelId": { "type": "string", "minLength": 1 },
+    "role": { "$ref": "./defs/groups.json#/$defs/Role" },
+    "grantsGuest": { "type": "boolean" },
+    "maxUses": { "type": "integer", "minimum": 1 },
+    "expiresAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" }
+  }
+}

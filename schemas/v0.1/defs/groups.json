@@ -80,6 +80,43 @@
         "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
       }
+    },
+    "Invite": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "groupId", "token", "uses", "createdBy", "createdAt"],
+      "description": "A join link / invite token granting membership to a group (optionally a specific channel).",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "groupId": { "type": "string", "minLength": 1 },
+        "channelId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional: invite targets a specific channel rather than the whole group."
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The secret carried by the join link; redeemed at POST /api/invites/{token}/redeem."
+        },
+        "role": {
+          "$ref": "#/$defs/Role",
+          "description": "Role granted on redemption (default `member`)."
+        },
+        "grantsGuest": {
+          "type": "boolean",
+          "description": "Whether this invite may be redeemed to provision a provider-local guest account (§4.8)."
+        },
+        "maxUses": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum redemptions; omitted means unlimited."
+        },
+        "uses": { "type": "integer", "minimum": 0 },
+        "expiresAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "createdBy": { "$ref": "./identity.json#/$defs/UserRef" },
+        "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
+      }
     }
   }
 }

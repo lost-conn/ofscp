@@ -47,6 +47,14 @@
         "avatar": {
           "$ref": "./common.json#/$defs/HttpsUri"
         },
+        "guest": {
+          "type": "boolean",
+          "description": "True for a provider-local temporary guest account (§4.8). Guest actors are not federated; remote providers MAY refuse them."
+        },
+        "expiresAt": {
+          "$ref": "./common.json#/$defs/Rfc3339DateTime",
+          "description": "For guest accounts: when the account expires. Absent for normal accounts."
+        },
         "updatedAt": {
           "$ref": "./common.json#/$defs/Rfc3339DateTime"
         },

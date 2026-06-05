@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/guest-create-request.json",
+  "title": "OFSCP Guest Account Create Request (v0.1)",
+  "description": "Body of POST /api/invites/{token}/guest. Provisions a provider-local guest account and registers its first device key. No password — the device key is the credential.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["public_key", "device_name"],
+  "properties": {
+    "displayName": { "type": "string" },
+    "public_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Base64-encoded Ed25519 public key for the guest's device."
+    },
+    "algorithm": { "type": "string", "enum": ["Ed25519"] },
+    "device_name": { "type": "string" }
+  }
+}

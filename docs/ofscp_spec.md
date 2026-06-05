@@ -388,7 +388,18 @@ Upon revocation:
 
 On logout, clients **SHOULD** request revocation of that device's key from their home provider and **MUST** delete the local private key.
 
+### 4.8. Guest Accounts
 
+A **guest account** is a lightweight, **provider-local** account created by redeeming an invite (§5.5) instead of by password registration. It lets someone participate in a group without a full home-provider account.
+
+A guest account:
+
+* Is created on the **group's** provider and bound to the group it joined; it **MAY** carry an `expiresAt` after which the provider **SHOULD** revoke it.
+* Authenticates exactly like a normal account: the guest registers an Ed25519 **device key** during provisioning (§5.5), and all subsequent requests are signed (§4.4). There is **no password**; the device key is the only credential.
+* Is represented by a `UserProfile` with `"guest": true` (and optional `expiresAt`). Its role within the group defaults to `guest`; whether guests may post is governed by the group's permission map (§5.2).
+* Is **not federated.** A guest actor **MUST NOT** be used for cross-provider requests, and remote providers **MAY** refuse to resolve or accept guest actors. The provider **MAY** still serve the guest's public key at the keys endpoint (§4.6) so that local verification works.
+
+Providers **MAY** decline to support guest accounts; an invite with `grantsGuest: false` (or a provider that does not offer guests) requires a full account to redeem.
 
 ---
 
@@ -740,6 +751,62 @@ Partially updates a channel (name, tier, topic, tags, metadata). `type` cannot b
 Deletes a channel.
 
 **Authorization:** group `manage` role. **Response:** `204 No Content`. **Errors:** `403`, `404`.
+
+### 5.6. Invites & Join Links
+
+An **invite** is a join link carrying a secret `token`. Redeeming it joins the issuing group (or a specific channel) without per-person approval — useful for `invite`/`request` groups (§5.2). An invite **MAY** be single-use or multi-use (`maxUses`), time-limited (`expiresAt`), and **MAY** allow provisioning a provider-local guest account (`grantsGuest`, §4.8).
+
+#### POST /api/groups/{groupId}/invites
+
+Creates an invite. **Authorization:** group `manage` role.
+
+**Request:**
+```json
+{ "channelId": "chn_general", "role": "member", "grantsGuest": true, "maxUses": 25, "expiresAt": "2025-03-08T12:00:00Z" }
+```
+
+All fields are optional. **Response (`201 Created`):** the created `Invite` (including `token`). The shareable join link is provider-defined but **SHOULD** embed the token, e.g. `https://{provider}/invite/{token}`.
+
+#### GET /api/groups/{groupId}/invites
+
+Lists the group's invites. **Authorization:** group `manage` role.
+
+#### DELETE /api/groups/{groupId}/invites/{inviteId}
+
+Revokes an invite. **Authorization:** group `manage` role. **Response:** `204 No Content`.
+
+#### POST /api/invites/{token}/redeem
+
+Redeems an invite as an **existing account** (signed request, §4.4). The caller joins the group (or `channelId`) with the invite's `role`.
+
+**Response (`200 OK`):**
+```json
+{ "groupId": "grp_1", "channelId": "chn_general", "role": "member" }
+```
+
+**Errors:** `404` (unknown/expired token), `409` (`maxUses` exhausted), `403` (provider/group policy forbids).
+
+#### POST /api/invites/{token}/guest
+
+Redeems an invite by provisioning a **guest account** (§4.8). Requires the invite's `grantsGuest` to be true. The request is **unsigned** (the guest has no key yet) and carries the guest's first device key.
+
+**Request:**
+```json
+{ "displayName": "Guest Ada", "public_key": "<base64>", "algorithm": "Ed25519", "device_name": "Chrome on Windows" }
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "actor": "guest_7f3a@a.com",
+  "key_id": "dk_guest_abc",
+  "profile": { "id": "https://a.com/api/users/guest_7f3a", "handle": "guest_7f3a", "domain": "a.com", "guest": true, "expiresAt": "2025-03-08T12:00:00Z", "updatedAt": "2025-03-01T12:00:00Z", "metadata": [] },
+  "groupId": "grp_1",
+  "role": "guest"
+}
+```
+
+The provider binds the device key to the new guest actor; all subsequent requests are signed (§4.4). **Errors:** `404`, `409`, `403` (e.g. `grantsGuest` is false or guests unsupported).
 
 ---
 

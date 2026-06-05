@@ -136,6 +136,18 @@
               "uri"
             ]
           }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Advertised provider limits.",
+          "properties": {
+            "maxUploadBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Maximum attachment upload size in bytes; uploads over this return 413."
+            }
+          }
         }
       }
     },

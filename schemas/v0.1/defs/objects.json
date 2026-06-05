@@ -29,7 +29,15 @@
         "id": { "type": "string", "minLength": 1 },
         "mime": { "$ref": "./common.json#/$defs/MimeType" },
         "url": { "$ref": "./common.json#/$defs/HttpsUri" },
-        "size": { "type": "integer", "minimum": 0 }
+        "size": { "type": "integer", "minimum": 0, "description": "Size in bytes." },
+        "filename": { "type": "string", "description": "Original filename (display only; not a path)." },
+        "hash": {
+          "type": "string",
+          "description": "Content integrity hash as `<algo>:<base64>`, e.g. `sha-256:…`."
+        },
+        "width": { "type": "integer", "minimum": 0, "description": "Pixel width for image/video." },
+        "height": { "type": "integer", "minimum": 0, "description": "Pixel height for image/video." },
+        "durationMs": { "type": "integer", "minimum": 0, "description": "Duration in milliseconds for audio/video." }
       }
     }
   }

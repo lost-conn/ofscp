@@ -127,8 +127,10 @@ Content-Type: application/json
         "id": "com.example.poll",
         "uri": "https://social.example/meta/poll.json"
       }
-    ]
-
+    ],
+    "limits": {
+      "maxUploadBytes": 26214400
+    }
   }
 }
 ```
@@ -846,6 +848,25 @@ Removes (kicks) a member. **Authorization:** group `moderate` role; the target *
 * `GET /api/groups/{groupId}/requests` — list pending `JoinRequest`s. **Authorization:** group `manage` or `moderate` role.
 * `POST /api/groups/{groupId}/requests/{requestId}/approve` — approve; creates the membership. **Response (`200 OK`):** the new `Member`.
 * `POST /api/groups/{groupId}/requests/{requestId}/deny` — deny. **Response:** `204 No Content`.
+
+### 5.8. Media & Attachments
+
+Messages reference uploaded files via the `attachments` array (§5.3). An `Attachment` is `{ id, mime, url, size, filename?, hash?, width?, height?, durationMs? }`, where `hash` is a content-integrity digest in `<algo>:<base64>` form (e.g. `sha-256:…`).
+
+#### POST /api/media
+
+Single-step upload (**REQUIRED** of all providers). The client uploads the file as `multipart/form-data` (signed per §4.4); the provider stores it and returns the hosted `Attachment`.
+
+**Response (`201 Created`):**
+```json
+{ "id": "att_1", "mime": "image/png", "url": "https://cdn.a.com/att_1.png", "size": 20480, "filename": "diagram.png", "hash": "sha-256:…", "width": 1024, "height": 768 }
+```
+
+The returned object is then placed in a message's `attachments`. Providers **MUST** enforce a maximum size and return **`413`** when exceeded; that limit **SHOULD** be advertised as `capabilities.limits.maxUploadBytes` in discovery (§3.1). Providers **SHOULD** populate `hash` so recipients can verify integrity.
+
+#### Pre-signed uploads (Optional)
+
+Providers **MAY** additionally offer a two-step flow for large media: `POST /api/media/uploads` returns `{ "uploadUrl": "…", "attachment": { "id": "…", … } }`; the client `PUT`s the bytes to `uploadUrl`; the attachment becomes referenceable once the upload completes. Clients **MUST NOT** assume this flow exists — the single-step `POST /api/media` is the interoperable baseline.
 
 ---
 

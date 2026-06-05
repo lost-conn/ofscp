@@ -74,6 +74,7 @@ async function main() {
     ['tests/join-request.sample.json', 'schemas/v0.1/join-request.json'],
     ['tests/message.sample.json', 'schemas/v0.1/message.json'],
     ['tests/message-update-request.sample.json', 'schemas/v0.1/message-update-request.json'],
+    ['tests/attachment.sample.json', 'schemas/v0.1/attachment.json'],
     ['tests/reaction.sample.json', 'schemas/v0.1/reaction.json'],
     ['tests/messages-page.sample.json', 'schemas/v0.1/messages-page.json'],
     ['tests/problem-details.sample.json', 'schemas/v0.1/problem-details.json'],

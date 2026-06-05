@@ -28,6 +28,9 @@
         "id": "com.example.poll",
         "uri": "https://social.example/meta/poll.json"
       }
-    ]
+    ],
+    "limits": {
+      "maxUploadBytes": 26214400
+    }
   }
 }

@@ -17,15 +17,7 @@
             "groupId": { "type": "string", "minLength": 1 },
             "channelId": { "type": "string", "minLength": 1 },
             "clientMessageId": { "type": "string", "minLength": 1 },
-            "content": {
-              "type": "object",
-              "additionalProperties": true,
-              "required": ["type", "text"],
-              "properties": {
-                "type": { "$ref": "../defs/common.json#/$defs/MimeType" },
-                "text": { "type": "string" }
-              }
-            }
+            "content": { "$ref": "../defs/messaging.json#/$defs/Content" }
           }
         }
       }

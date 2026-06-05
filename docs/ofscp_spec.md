@@ -970,7 +970,7 @@ Client → Server:
     "groupId": "grp_1",
     "channelId": "chn_general",
     "clientMessageId": "cmsg_abc123",
-    "content": { "type": "text/plain", "text": "hi" }
+    "content": { "mime": "text/plain", "text": "hi" }
   }
 }
 ```
@@ -990,7 +990,7 @@ Server → Client event (fan-out to all subscribed clients, including the author
       "clientMessageId": "cmsg_abc123",
       "author": "alice@a.com",
       "createdAt": "2026-01-01T12:00:00Z",
-      "content": { "type": "text/plain", "text": "hi" }
+      "content": { "mime": "text/plain", "text": "hi" }
     }
   }
 }

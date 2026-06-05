@@ -7,7 +7,7 @@
     "channelId": "chn_general",
     "clientMessageId": "cmsg_abc123",
     "content": {
-      "type": "text/plain",
+      "mime": "text/plain",
       "text": "hi"
     }
   }

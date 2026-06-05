@@ -10,7 +10,7 @@
       "author": "jane@a.com",
       "createdAt": "2026-01-01T12:00:00Z",
       "content": {
-        "type": "text/plain",
+        "mime": "text/plain",
         "text": "edited"
       }
     }

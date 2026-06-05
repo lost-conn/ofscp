@@ -25,15 +25,7 @@
                 "clientMessageId": { "type": "string", "minLength": 1 },
                 "author": { "$ref": "../defs/identity.json#/$defs/UserRef" },
                 "createdAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
-                "content": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "required": ["type", "text"],
-                  "properties": {
-                    "type": { "$ref": "../defs/common.json#/$defs/MimeType" },
-                    "text": { "type": "string" }
-                  }
-                }
+                "content": { "$ref": "../defs/messaging.json#/$defs/Content" }
               }
             }
           }

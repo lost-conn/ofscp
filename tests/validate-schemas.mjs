@@ -70,6 +70,8 @@ async function main() {
     ['tests/invite.sample.json', 'schemas/v0.1/invite.json'],
     ['tests/invite-create-request.sample.json', 'schemas/v0.1/invite-create-request.json'],
     ['tests/guest-create-request.sample.json', 'schemas/v0.1/guest-create-request.json'],
+    ['tests/member.sample.json', 'schemas/v0.1/member.json'],
+    ['tests/join-request.sample.json', 'schemas/v0.1/join-request.json'],
     ['tests/message.sample.json', 'schemas/v0.1/message.json'],
     ['tests/reaction.sample.json', 'schemas/v0.1/reaction.json'],
     ['tests/messages-page.sample.json', 'schemas/v0.1/messages-page.json'],

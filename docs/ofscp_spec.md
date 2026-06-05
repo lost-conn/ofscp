@@ -808,6 +808,45 @@ Redeems an invite by provisioning a **guest account** (§4.8). Requires the invi
 
 The provider binds the device key to the new guest actor; all subsequent requests are signed (§4.4). **Errors:** `404`, `409`, `403` (e.g. `grantsGuest` is false or guests unsupported).
 
+### 5.7. Membership
+
+A **member** is `{ user, role, joinedAt }`. Roles default to `member`; canonical roles are `owner`, `admin`, `member`, and `guest` (§5.2). Permissions are resolved from the group's permission map (§5.2).
+
+#### POST /api/groups/{groupId}/join
+
+Requests to join a group. Behavior depends on the group's `joinPolicy` (§5.2):
+
+* `open` → the caller becomes a member immediately. **Response (`201 Created`):** the `Member`.
+* `request` → a pending request is recorded. **Response (`202 Accepted`):** the `JoinRequest`. An optional `{ "message": "…" }` body may accompany the request.
+* `invite` → **`403 Forbidden`**; the caller must redeem an invite (§5.6).
+
+#### POST /api/groups/{groupId}/leave
+
+Removes the caller's own membership. **Response:** `204 No Content`. The `owner` **MUST** transfer ownership (via a role change) before leaving; otherwise the provider **MUST** reject with `409`.
+
+#### GET /api/groups/{groupId}/members
+
+Lists members. **Authorization:** visible to group members; for `public`/`discoverable` groups providers **MAY** expose it publicly. Members who have hidden their membership (§6) **MAY** be omitted for unauthorized viewers. Paginated per §7.2.
+
+**Response (`200 OK`):**
+```json
+{ "items": [ { "user": "jane@a.com", "role": "admin", "joinedAt": "2025-03-01T12:00:00Z" } ], "page": { "nextCursor": null } }
+```
+
+#### PATCH /api/groups/{groupId}/members/{userRef}
+
+Changes a member's `role` (promote/demote). **Authorization:** group `manage` role. Transferring `owner` is an owner-only action. **Request:** `{ "role": "admin" }`. **Response (`200 OK`):** the updated `Member`. **Errors:** `403`, `404`.
+
+#### DELETE /api/groups/{groupId}/members/{userRef}
+
+Removes (kicks) a member. **Authorization:** group `moderate` role; the target **MUST NOT** outrank the caller. **Response:** `204 No Content`. (Banning — preventing rejoin — is left to the moderation work in §13.)
+
+#### Join requests (for `request` policy)
+
+* `GET /api/groups/{groupId}/requests` — list pending `JoinRequest`s. **Authorization:** group `manage` or `moderate` role.
+* `POST /api/groups/{groupId}/requests/{requestId}/approve` — approve; creates the membership. **Response (`200 OK`):** the new `Member`.
+* `POST /api/groups/{groupId}/requests/{requestId}/deny` — deny. **Response:** `204 No Content`.
+
 ---
 
 ## 6. User Privacy Endpoints (Profile, Presence, Membership Listing)
@@ -1481,6 +1520,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Authenticate WebSocket connections via the signed `auth.challenge`/`authenticate` handshake (§7.1)
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
+- [ ] Support group membership: join/leave, member listing, roles, and the `request` approval flow (§5.7)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints

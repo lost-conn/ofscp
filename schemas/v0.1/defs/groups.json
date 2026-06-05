@@ -117,6 +117,30 @@
         "createdBy": { "$ref": "./identity.json#/$defs/UserRef" },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
       }
+    },
+    "Member": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["user", "role", "joinedAt"],
+      "properties": {
+        "user": { "$ref": "./identity.json#/$defs/UserRef" },
+        "role": { "$ref": "#/$defs/Role" },
+        "joinedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
+      }
+    },
+    "JoinRequest": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "groupId", "user", "state", "requestedAt"],
+      "description": "A pending request to join a group whose joinPolicy is `request`.",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "groupId": { "type": "string", "minLength": 1 },
+        "user": { "$ref": "./identity.json#/$defs/UserRef" },
+        "state": { "type": "string", "enum": ["pending", "approved", "denied"] },
+        "message": { "type": "string", "description": "Optional note from the requester." },
+        "requestedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
+      }
     }
   }
 }

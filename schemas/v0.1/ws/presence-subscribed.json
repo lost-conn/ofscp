@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/presence-subscribed.json",
+  "title": "OFSCP WS presence.subscribed event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "presence.subscribed" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["users"],
+          "properties": {
+            "users": {
+              "type": "array",
+              "items": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+              "description": "The users now subscribed. The provider SHOULD follow this with an initial presence.update snapshot for each."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

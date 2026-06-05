@@ -965,6 +965,8 @@ Example request:
 }
 ```
 
+These REST endpoints are the non-WebSocket baseline. Connected clients **SHOULD** instead use real-time presence over the WebSocket (§7.5), which delivers `presence.update` events, derives online/offline from connection liveness, and applies the same visibility filtering as `GET /api/users/{userRef}/presence`.
+
 ### 6.5. Group memberships visible to viewer
 
 ```http
@@ -1177,6 +1179,9 @@ The `type` field **MUST** be one of the following standardized strings.
 | `reaction.remove` | Remove your reaction from a message. | `WsReactionRemove` |
 | `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
 | `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
+| `presence.subscribe` | Subscribe to presence updates for a set of users (§7.5). | `WsPresenceSubscribe` |
+| `presence.unsubscribe` | Unsubscribe from presence updates for a set of users (§7.5). | `WsPresenceUnsubscribe` |
+| `presence.set` | Set your own presence (availability/status); equivalent to `PUT /api/me/presence` (§7.5). | `WsPresenceSet` |
 | `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
 | `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 
@@ -1194,6 +1199,10 @@ The `type` field **MUST** be one of the following standardized strings.
 | `reaction.added` | A reaction was added to a message. | `WsReactionAdded` |
 | `reaction.removed` | A reaction was removed from a message. | `WsReactionRemoved` |
 | `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
+| `dm.message` | A direct message was delivered to your inbox (§7.4). | `WsDmMessage` |
+| `presence.subscribed` | Acknowledgement of a successful `presence.subscribe`. | `WsPresenceSubscribed` |
+| `presence.unsubscribed` | Acknowledgement of a successful `presence.unsubscribe`. | `WsPresenceUnsubscribed` |
+| `presence.update` | A subscribed user's presence changed (§7.5). | `WsPresenceUpdate` |
 | `call.started` | A call became active in a subscribed channel. | `WsCallStarted` |
 | `call.ended` | A call ended in a subscribed channel. | `WsCallEnded` |
 | `call.participant` | A participant joined or left the call. | `WsCallParticipant` |
@@ -1520,6 +1529,53 @@ When a DM is delivered to the user's inbox, the provider emits `dm.message`:
 
 Only the recipient receives `dm.message`, since only their inbox stores the message. Editing and deleting DMs follow the same author/tombstone rules as §7.1, applied against the recipient's stored copy.
 
+### 7.5. Real-time presence
+
+Presence (§6.4: `availability` ∈ `online`/`away`/`dnd`/`offline`, plus `status`, `lastSeen`) is delivered live over the §7.1 WebSocket rather than by polling the REST endpoint.
+
+#### Subscribing
+
+A client subscribes to a set of users' presence with `presence.subscribe`:
+
+```json
+{ "id": "cli_600", "type": "presence.subscribe", "ts": "2026-02-01T10:00:00Z", "data": { "users": ["bob@b.com", "carol@c.com"] } }
+```
+
+The provider acknowledges with `presence.subscribed` and **SHOULD** immediately follow with an initial `presence.update` snapshot for each subscribed user, so the client renders current state without a separate REST read. `presence.unsubscribe` (acked by `presence.unsubscribed`) stops updates for the listed users. Presence subscriptions are connection-scoped, like channel subscriptions (§7.1).
+
+#### Setting your presence
+
+A connected client sets its own presence with `presence.set`, equivalent to `PUT /api/me/presence` (§6.4) and updating the same stored value:
+
+```json
+{ "id": "cli_602", "type": "presence.set", "ts": "2026-02-01T10:10:00Z", "data": { "availability": "dnd", "status": "In a meeting" } }
+```
+
+`offline` is **not** a settable value — it is derived from connection liveness (below).
+
+#### Connection-derived online/offline
+
+Providers **MUST** derive coarse online/offline state from the WebSocket connection and heartbeat (§7.1):
+
+* On a successful `authenticate`, the provider marks the actor `online` (unless the actor has an explicitly-set `away`/`dnd`, which is preserved) and fans out a `presence.update`.
+* On disconnect or heartbeat timeout (§7.1), the provider marks the actor `offline`, sets `lastSeen` to that moment, and fans out a `presence.update`.
+
+This gives the Discord-like "goes online/offline automatically" behavior without client polling. An explicitly-set `away`/`dnd` and `status` persist across reconnects until changed; a manual *invisible* mode is out of scope for v0.1 (see §13).
+
+#### Privacy-filtered fan-out
+
+The provider applies the subject's presence visibility policy (§6.1, including `allowList`/`denyList`) to **every** `presence.update`, evaluated per (subject, viewer). A viewer not permitted to see a subject receives a uniform `offline` presence (no `status`/`lastSeen`) — indistinguishable from genuinely offline — rather than the real state. This matches the filtering of the REST `GET /api/users/{userRef}/presence` (§6.4); the two surfaces **MUST** return consistent results for the same viewer.
+
+#### Reconciliation with REST (§6.4)
+
+* `presence.set` and `PUT /api/me/presence` update the same stored presence and both trigger fan-out.
+* `GET /api/users/{userRef}/presence` returns the same value the WebSocket would emit to that viewer, filtered identically.
+* A `presence.update` snapshot on subscribe replaces the need to poll; clients **SHOULD** prefer the WebSocket and fall back to REST only when not connected.
+
+#### Federation
+
+Presence for a **remote** user is obtained by subscribing on that user's home provider over the direct-WS connection a client already holds for that provider (§8.5); a provider answers `presence.subscribe` for the users it hosts. There is no provider-to-provider presence relay in v0.1.
+
 ---
 
 ## 8. Federation Rules
@@ -1831,6 +1887,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Accept direct-WS connections from remote members — resolve remote keys via §4.6, enforce prior membership + tier at subscribe-time — and advertise `capabilities.federation.realtimeDelivery` (§8.5)
 - [ ] For `discoverable` channels, run the WebSub-like feed protocol: lease-based subscriptions with callback-host + challenge-echo verification, provider-signed fat pushes carrying created/updated/deleted, and a paged `GET …/discoverable` catch-up feed (§8.4)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
+- [ ] Support real-time presence over WebSocket: `presence.subscribe`/`set`, `presence.update` fan-out, connection-derived online/offline, and §6.1 visibility filtering consistent with the REST presence endpoint (§7.5)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce tiers per channel and group
 - [ ] Support the `private` tier

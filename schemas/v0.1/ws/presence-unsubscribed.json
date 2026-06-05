@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/presence-unsubscribed.json",
+  "title": "OFSCP WS presence.unsubscribed event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "presence.unsubscribed" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["users"],
+          "properties": {
+            "users": {
+              "type": "array",
+              "items": { "$ref": "../defs/identity.json#/$defs/UserRef" }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

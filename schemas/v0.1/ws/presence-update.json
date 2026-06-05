@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/presence-update.json",
+  "title": "OFSCP WS presence.update event (v0.1)",
+  "description": "Emitted to subscribers when a subject's presence changes (§6.7-WS / §7.5). Viewers not permitted by the subject's §6.1 visibility policy receive a uniform `offline` presence, indistinguishable from genuinely offline.",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "presence.update" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["user", "presence"],
+          "properties": {
+            "user": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+            "presence": { "$ref": "../presence.json" }
+          }
+        }
+      }
+    }
+  ]
+}

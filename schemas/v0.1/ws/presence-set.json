@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/presence-set.json",
+  "title": "OFSCP WS presence.set command (v0.1)",
+  "description": "Sets the authenticated actor's presence over the WebSocket — equivalent to PUT /api/me/presence (§6.4). `offline` is connection-derived and is not a valid value here; the provider sets it on disconnect/heartbeat timeout (§7.1).",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "presence.set" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["availability"],
+          "properties": {
+            "availability": {
+              "type": "string",
+              "enum": ["online", "away", "dnd"]
+            },
+            "status": { "type": "string" },
+            "metadata": { "$ref": "../defs/objects.json#/$defs/MetadataList" }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/reaction-remove.json",
+  "title": "OFSCP WS reaction.remove command (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "reaction.remove" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["groupId", "channelId", "messageId", "key"],
+          "properties": {
+            "groupId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "string", "minLength": 1 },
+            "messageId": { "type": "string", "minLength": 1 },
+            "key": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  ]
+}

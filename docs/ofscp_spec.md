@@ -1105,6 +1105,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.create` | Create (post) a message into a channel timeline. | `WsMessageCreate` |
 | `message.update` | Edit an existing message (author-only, within `editUntil`). | `WsMessageUpdate` |
 | `message.delete` | Delete (tombstone) a message. | `WsMessageDelete` |
+| `reaction.add` | Add a reaction to a message. | `WsReactionAdd` |
+| `reaction.remove` | Remove your reaction from a message. | `WsReactionRemove` |
 | `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
 | `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
 | `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
@@ -1121,6 +1123,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.created` | A message was created in a subscribed channel. | `WsMessageCreated` |
 | `message.updated` | A message was updated in a subscribed channel. | `WsMessageUpdated` |
 | `message.deleted` | A message was deleted in a subscribed channel. | `WsMessageDeleted` |
+| `reaction.added` | A reaction was added to a message. | `WsReactionAdded` |
+| `reaction.removed` | A reaction was removed from a message. | `WsReactionRemoved` |
 | `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
 | `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
 | `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
@@ -1254,6 +1258,24 @@ Providers **MAY** reap tombstones after a retention period. Clients **MUST** ren
 
 * `PATCH /api/groups/{groupId}/channels/{channelId}/messages/{messageId}` — body `{ "content": { … } }`; returns the updated message (with `editedAt`).
 * `DELETE /api/groups/{groupId}/channels/{channelId}/messages/{messageId}` — returns `204 No Content`; the message becomes a tombstone.
+
+#### Reactions
+
+A reaction is a `Reaction` object (§5.3) referencing a message. A user may hold at most **one** reaction per `key` per message; adding the same key again is idempotent.
+
+Client → Server:
+```json
+{ "id": "cli_400", "type": "reaction.add", "data": { "groupId": "grp_1", "channelId": "chn_general", "messageId": "msg_999", "key": "heart", "unicode": "❤️" } }
+```
+
+The provider creates the `Reaction` (assigning `id`, `author`, `createdAt`) and fans out `reaction.added` with the full object; `reaction.remove` fans out `reaction.removed` (`{ groupId, channelId, messageId, key, author }`). OFSCP v0.1 does **not** put a server-aggregated count on messages: clients compute reaction totals from the reaction objects/events. To support history and late joiners, providers **MUST** expose:
+
+* `GET /api/groups/{groupId}/channels/{channelId}/messages/{messageId}/reactions` — paginated list of `Reaction` objects for the message.
+
+**REST equivalents:**
+
+* `PUT /api/groups/{groupId}/channels/{channelId}/messages/{messageId}/reactions/{key}` — add your reaction (optional body `{ "unicode": "…", "image": "…" }`); idempotent.
+* `DELETE /api/groups/{groupId}/channels/{channelId}/messages/{messageId}/reactions/{key}` — remove your reaction. `204 No Content`.
 
 #### Typing indicators
 

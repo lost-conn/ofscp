@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/reaction-removed.json",
+  "title": "OFSCP WS reaction.removed event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "reaction.removed" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["groupId", "channelId", "messageId", "key", "author"],
+          "properties": {
+            "groupId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "string", "minLength": 1 },
+            "messageId": { "type": "string", "minLength": 1 },
+            "key": { "type": "string", "minLength": 1 },
+            "author": { "$ref": "../defs/identity.json#/$defs/UserRef" }
+          }
+        }
+      }
+    }
+  ]
+}

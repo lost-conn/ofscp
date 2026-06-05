@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/reaction-add.json",
+  "title": "OFSCP WS reaction.add command (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "reaction.add" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["groupId", "channelId", "messageId", "key"],
+          "properties": {
+            "groupId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "string", "minLength": 1 },
+            "messageId": { "type": "string", "minLength": 1 },
+            "key": { "type": "string", "minLength": 1 },
+            "unicode": { "type": "string" },
+            "image": { "$ref": "../defs/common.json#/$defs/HttpsUri" }
+          }
+        }
+      }
+    }
+  ]
+}

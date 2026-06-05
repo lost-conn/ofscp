@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/call-started.json",
+  "title": "OFSCP WS call.started event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "call.started" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["groupId", "channelId", "startedBy", "startedAt"],
+          "properties": {
+            "groupId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "string", "minLength": 1 },
+            "startedBy": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+            "startedAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" }
+          }
+        }
+      }
+    }
+  ]
+}

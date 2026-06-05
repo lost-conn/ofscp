@@ -1,0 +1,11 @@
+{
+  "id": "evt_502",
+  "type": "call.participant",
+  "ts": "2026-01-01T12:21:00Z",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_voice",
+    "user": "bob@b.com",
+    "state": "joined"
+  }
+}

@@ -88,6 +88,10 @@ async function main() {
     ['tests/call-offer.sample.json', 'schemas/v0.1/call-offer.json'],
     ['tests/call-answer.sample.json', 'schemas/v0.1/call-answer.json'],
     ['tests/call-ice.sample.json', 'schemas/v0.1/call-ice.json'],
+    ['tests/call-session.sample.json', 'schemas/v0.1/call-session.json'],
+    ['tests/ws-call-started.sample.json', 'schemas/v0.1/ws/call-started.json'],
+    ['tests/ws-call-ended.sample.json', 'schemas/v0.1/ws/call-ended.json'],
+    ['tests/ws-call-participant.sample.json', 'schemas/v0.1/ws/call-participant.json'],
 
     // WebSocket realtime messaging (v0.1)
     ['tests/ws-auth-challenge.sample.json', 'schemas/v0.1/ws/auth-challenge.json'],

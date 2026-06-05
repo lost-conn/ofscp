@@ -53,6 +53,22 @@
     "VisibilityPolicy": {
       "type": "string",
       "enum": ["public", "authenticated", "sharedGroups", "contacts", "nobody"]
+    },
+    "IceServer": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "WebRTC ICE server (STUN/TURN) config, mirroring the W3C RTCIceServer shape.",
+      "required": ["urls"],
+      "properties": {
+        "urls": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          ]
+        },
+        "username": { "type": "string" },
+        "credential": { "type": "string" }
+      }
     }
   }
 }

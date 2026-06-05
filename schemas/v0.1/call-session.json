@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/call-session.json",
+  "title": "OFSCP Call Session Response (v0.1)",
+  "description": "Returned by POST .../call/start and .../call/join: the current call state plus the ICE servers the client should use.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["channel", "call", "iceServers"],
+  "properties": {
+    "channel": { "type": "string", "minLength": 1 },
+    "call": { "$ref": "./call-channel-state.json#/properties/call" },
+    "iceServers": {
+      "type": "array",
+      "items": { "$ref": "./defs/common.json#/$defs/IceServer" }
+    }
+  }
+}

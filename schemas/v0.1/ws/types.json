@@ -21,6 +21,9 @@
         "reaction.added",
         "reaction.removed",
         "channel.typing",
+        "call.started",
+        "call.ended",
+        "call.participant",
         "ping",
         "pong",
         "error"
@@ -51,6 +54,9 @@
         "reaction.added",
         "reaction.removed",
         "channel.typing",
+        "call.started",
+        "call.ended",
+        "call.participant",
         "error"
       ]
     }

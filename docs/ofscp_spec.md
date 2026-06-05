@@ -1147,6 +1147,9 @@ The `type` field **MUST** be one of the following standardized strings.
 | `reaction.added` | A reaction was added to a message. | `WsReactionAdded` |
 | `reaction.removed` | A reaction was removed from a message. | `WsReactionRemoved` |
 | `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
+| `call.started` | A call became active in a subscribed channel. | `WsCallStarted` |
+| `call.ended` | A call ended in a subscribed channel. | `WsCallEnded` |
+| `call.participant` | A participant joined or left the call. | `WsCallParticipant` |
 | `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
 | `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 | `error` | Request-scoped error response. | `WsError` |
@@ -1498,6 +1501,23 @@ These endpoints act as the signaling plane. Payloads are ephemeral and not persi
 * Providers **MUST** ensure only one `active` session per call channel; attempts to start another result in **409**.
 
 Consumers exchange media peer-to-peer; providers act as signaling coordinators only.
+
+### 9.3. Call lifecycle
+
+Call control uses REST endpoints (consistent with the signaling plane above); the resulting state changes fan out as events over the channel's WebSocket subscription (§7.1).
+
+* `POST /api/groups/{groupId}/channels/{channelId}/call/start` — start a call in a `call`-type channel. **`409`** if one is already `active` (§9.2). **Response (`201 Created`):** a **call session** `{ channel, call, iceServers }`.
+* `POST …/call/join` — join the active call. **Response (`200 OK`):** the call session (current `call` state + `iceServers`). Emits `call.participant` (`state: "joined"`).
+* `POST …/call/leave` — leave. **Response:** `204 No Content`. Emits `call.participant` (`state: "left"`).
+* `POST …/call/end` — end the call. **Authorization:** the call `host` or a member with the `moderate` role. **Response:** `204 No Content`. Emits `call.ended`.
+
+When a call transitions to `active`, the provider emits `call.started` to channel subscribers. (`call.started` is also the notification event referenced in §10.)
+
+**ICE servers.** `start` and `join` responses **MUST** include an `iceServers` array (W3C `RTCIceServer` shape: `{ urls, username?, credential? }`) so clients can traverse NAT. Providers **SHOULD** supply TURN credentials scoped and time-limited to the session.
+
+**Disconnect cleanup.** A participant's call membership is tied to their liveness. Providers **SHOULD** auto-`leave` a participant (emitting `call.participant` `state: "left"`) when that participant's WebSocket connection drops or its heartbeat (§7.1) times out, so a crashed client does not linger in the call. When the last participant leaves, the call returns to `inactive` and `call.ended` is emitted.
+
+The corresponding WebSocket events are `call.started`, `call.ended`, and `call.participant` (§7.1 event table).
 
 ---
 

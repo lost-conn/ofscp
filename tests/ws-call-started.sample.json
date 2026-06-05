@@ -1,0 +1,11 @@
+{
+  "id": "evt_500",
+  "type": "call.started",
+  "ts": "2026-01-01T12:20:00Z",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_voice",
+    "startedBy": "jane@a.com",
+    "startedAt": "2026-01-01T12:20:00Z"
+  }
+}

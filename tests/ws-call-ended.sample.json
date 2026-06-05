@@ -1,0 +1,10 @@
+{
+  "id": "evt_501",
+  "type": "call.ended",
+  "ts": "2026-01-01T12:40:00Z",
+  "data": {
+    "groupId": "grp_1",
+    "channelId": "chn_voice",
+    "endedAt": "2026-01-01T12:40:00Z"
+  }
+}

@@ -36,7 +36,7 @@
       "type": "object",
       "additionalProperties": true,
       "required": ["active"],
-      "description": "Lightweight call status for a call channel. Full signaling state is defined in §9.",
+      "description": "Lightweight, derived call status for a call channel — a read-time projection of the authoritative call state (§9.1), not an independently-stored value. Full signaling state is defined in §9.",
       "properties": {
         "active": { "type": "boolean" },
         "participants": {

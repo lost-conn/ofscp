@@ -168,10 +168,7 @@ Discovery **MUST NOT** be used to redefine the standardized endpoint paths in th
 
 ### 3.4. Provider Interconnection
 
-Providers **MAY** maintain a list of "Known Providers" to facilitate federation. This list can optionally be populated via:
-1.  **Manual Peering:** Administrators explicitly adding trusted domains.
-2.  **Scraping:** Discovering user home domains from incoming cross-provider interactions.
-3.  **Referral:** Querying other providers for their known peers.
+Providers **MAY** maintain a list of *known providers* (peers) to facilitate federation and discovery — optionally populated by manual peering, scraping incoming cross-provider interactions, or referral (querying peers' lists). This is specified in full in §8.6 (maintaining and sharing the list) and consumed by discovery in §11.2; it is optional throughout.
 
 ---
 
@@ -509,7 +506,7 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
 ```
 
 * `type` is one of `text` or `call`. `type` is immutable after creation.
-* A `call`-type channel additionally carries a lightweight `call` summary (`{ "active": false, "participants": [] }`); full signaling state is defined in §9.
+* A `call`-type channel **MAY** include a lightweight `call` summary (`{ "active": false, "participants": [] }`) for convenience (e.g. rendering channel lists). It is a **derived, read-time projection** of the authoritative call state (§9.1) and **MUST** reflect it — not an independently-stored or separately-mutable field. Full signaling state is defined in §9.
 
 ### 5.3. Message Objects
 

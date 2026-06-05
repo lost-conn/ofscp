@@ -1,0 +1,16 @@
+{
+  "id": "grp_1",
+  "name": "Dev Guild",
+  "description": "A group for discussion",
+  "owner": "jane@a.com",
+  "joinPolicy": "open",
+  "discoverability": "public",
+  "permissions": {
+    "post": ["member"],
+    "moderate": ["admin"],
+    "manage": ["admin"]
+  },
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
+}

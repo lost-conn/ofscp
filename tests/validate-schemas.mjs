@@ -46,7 +46,8 @@ async function preloadDefs() {
     'schemas/v0.1/defs/objects.json',
     'schemas/v0.1/defs/identity.json',
     'schemas/v0.1/defs/privacy.json',
-    'schemas/v0.1/defs/messaging.json'
+    'schemas/v0.1/defs/messaging.json',
+    'schemas/v0.1/defs/groups.json'
   ]) {
     ajv.addSchema(await loadJson(defPath));
   }
@@ -60,6 +61,12 @@ async function main() {
     ['tests/user-profile.sample.json', 'schemas/v0.1/user-profile.json'],
     ['tests/presence.sample.json', 'schemas/v0.1/presence.json'],
     ['tests/privacy-settings.sample.json', 'schemas/v0.1/privacy-settings.json'],
+    ['tests/group.sample.json', 'schemas/v0.1/group.json'],
+    ['tests/channel.sample.json', 'schemas/v0.1/channel.json'],
+    ['tests/group-create-request.sample.json', 'schemas/v0.1/group-create-request.json'],
+    ['tests/group-update-request.sample.json', 'schemas/v0.1/group-update-request.json'],
+    ['tests/channel-create-request.sample.json', 'schemas/v0.1/channel-create-request.json'],
+    ['tests/channel-update-request.sample.json', 'schemas/v0.1/channel-update-request.json'],
     ['tests/message.sample.json', 'schemas/v0.1/message.json'],
     ['tests/reaction.sample.json', 'schemas/v0.1/reaction.json'],
     ['tests/messages-page.sample.json', 'schemas/v0.1/messages-page.json'],

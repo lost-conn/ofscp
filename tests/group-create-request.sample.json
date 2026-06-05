@@ -1,0 +1,12 @@
+{
+  "name": "Dev Guild",
+  "description": "A group for discussion",
+  "discoverability": "public",
+  "joinPolicy": "open",
+  "permissions": {
+    "post": ["member"],
+    "moderate": ["admin"],
+    "manage": ["admin"]
+  },
+  "metadata": []
+}

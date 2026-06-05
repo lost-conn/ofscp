@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/channel-update-request.json",
+  "title": "OFSCP Channel Update Request (v0.1)",
+  "description": "Partial update (PATCH). All fields optional; omitted fields are unchanged. Channel `type` is immutable and cannot be changed.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "name": { "type": "string" },
+    "discoverability": { "$ref": "./defs/common.json#/$defs/Discoverability" },
+    "topic": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

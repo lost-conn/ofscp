@@ -436,37 +436,52 @@ Additionally, some user-adjacent data (notably: presence, bio, and group members
 }
 ```
 
-### 5.3. Group & Channels
+### 5.2. Group & Channels
+
+A **Group** is the canonical container object. Channels are **not** embedded in the group object; they are fetched via `GET /api/groups/{groupId}/channels` (§5.5). This keeps the group representation stable regardless of channel count.
+
+**Group (example):**
 ```json
 {
   "id": "grp_1",
   "name": "Dev Guild",
+  "description": "A group for discussion",
   "owner": "jane@a.com",
+  "joinPolicy": "open",
+  "discoverability": "public",
   "permissions": {
     "post": ["member"],
-    "moderate": ["admin"]
+    "moderate": ["admin"],
+    "manage": ["admin"]
   },
-  "channels": [
-    {
-      "id": "chn_general",
-      "type": "text",
-      "discoverability": "public",
-      "tags": ["announcements"],
-      "metadata": []
-    },
-    {
-      "id": "chn_voice",
-      "type": "call",
-      "discoverability": "group",
-      "call": {
-        "active": false,
-        "participants": []
-      },
-      "metadata": []
-    }
-  ]
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
 }
 ```
+
+* `joinPolicy` is one of `open` (anyone may join), `request` (join requires approval), or `invite` (invitation only).
+* `permissions` maps an **action** to the **roles** permitted to perform it. Canonical actions are `post`, `moderate`, and `manage`; canonical roles are `owner`, `admin`, and `member`. Providers **MAY** define additional actions or roles.
+* `discoverability` uses the per-channel/group tier values (§11).
+
+**Channel (example):**
+```json
+{
+  "id": "chn_general",
+  "groupId": "grp_1",
+  "name": "general",
+  "type": "text",
+  "discoverability": "public",
+  "topic": "General discussion",
+  "tags": ["announcements"],
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
+}
+```
+
+* `type` is one of `text` or `call`. `type` is immutable after creation.
+* A `call`-type channel additionally carries a lightweight `call` summary (`{ "active": false, "participants": [] }`); full signaling state is defined in §9.
 
 ### 5.3. Message Objects
 
@@ -609,7 +624,32 @@ Metadata can be attached to most objects to implement custom features. Such feat
 }
 ```
 
-### 5.5. Group Endpoints
+### 5.5. Group & Channel Endpoints
+
+All endpoints in this section are signed requests (§4.4) unless explicitly marked as unauthenticated. Object shapes are the canonical `Group` and `Channel` of §5.2.
+
+#### POST /api/groups
+
+Creates a group. The authenticated actor becomes the `owner`. Providers **MAY** restrict who can create groups (provider policy).
+
+**Request:**
+```json
+{
+  "name": "Dev Guild",
+  "description": "A group for discussion",
+  "discoverability": "public",
+  "joinPolicy": "open",
+  "permissions": {
+    "post": ["member"],
+    "moderate": ["admin"],
+    "manage": ["admin"]
+  }
+}
+```
+
+`name` is **REQUIRED**; all other fields are optional and providers **SHOULD** apply sensible defaults (RECOMMENDED: `discoverability: "private"`, `joinPolicy: "invite"`).
+
+**Response (`201 Created`):** the created `Group`.
 
 #### GET /api/groups/{groupId}
 
@@ -638,6 +678,60 @@ Fetches metadata for a single group.
 - `403 Forbidden`: Private group and caller is not a member
 
 **Federation:** Remote providers MAY query this endpoint to display group info to users considering joining. Providers MUST enforce discoverability rules for federated requests.
+
+#### PATCH /api/groups/{groupId}
+
+Partially updates a group (name, description, discoverability, joinPolicy, permissions, metadata). Omitted fields are unchanged.
+
+**Authorization:** caller must hold a role permitted by the group's `manage` action (default: `owner`/`admin`).
+
+**Response (`200 OK`):** the updated `Group`. **Errors:** `403` (not permitted), `404` (no such group).
+
+#### DELETE /api/groups/{groupId}
+
+Deletes a group and its channels.
+
+**Authorization:** `owner` only.
+
+**Response:** `204 No Content`. **Errors:** `403`, `404`.
+
+#### GET /api/groups/{groupId}/channels
+
+Lists the channels of a group that are **visible to the caller** (per each channel's discoverability and the caller's membership).
+
+**Response (`200 OK`):**
+```json
+{ "items": [ { "id": "chn_general", "groupId": "grp_1", "type": "text", "discoverability": "public", "createdAt": "2025-03-01T12:00:00Z", "updatedAt": "2025-03-01T12:00:00Z", "metadata": [] } ] }
+```
+
+#### POST /api/groups/{groupId}/channels
+
+Creates a channel in the group.
+
+**Authorization:** caller must hold a role permitted by the group's `manage` action.
+
+**Request:**
+```json
+{ "name": "general", "type": "text", "discoverability": "public", "topic": "General discussion", "tags": ["announcements"] }
+```
+
+`type` is **REQUIRED** and immutable. **Response (`201 Created`):** the created `Channel`.
+
+#### GET /api/groups/{groupId}/channels/{channelId}
+
+Fetches a single channel. **Authorization** mirrors the channel's discoverability (same rules as `GET /api/groups/{groupId}`). **Errors:** `403`, `404`.
+
+#### PATCH /api/groups/{groupId}/channels/{channelId}
+
+Partially updates a channel (name, discoverability, topic, tags, metadata). `type` cannot be changed.
+
+**Authorization:** group `manage` role. **Response (`200 OK`):** the updated `Channel`. **Errors:** `403`, `404`.
+
+#### DELETE /api/groups/{groupId}/channels/{channelId}
+
+Deletes a channel.
+
+**Authorization:** group `manage` role. **Response:** `204 No Content`. **Errors:** `403`, `404`.
 
 ---
 
@@ -1242,6 +1336,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Validate Ed25519 request signatures over the §4.4.2 canonical string, including authority binding and nonce replay rejection
 - [ ] Authenticate WebSocket connections via the signed `auth.challenge`/`authenticate` handshake (§7.1)
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
+- [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier

@@ -1,0 +1,8 @@
+{
+  "name": "general",
+  "type": "text",
+  "discoverability": "public",
+  "topic": "General discussion",
+  "tags": ["announcements"],
+  "metadata": []
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/message-update-request.json",
+  "title": "OFSCP Message Update Request (v0.1)",
+  "description": "Body of PATCH .../messages/{messageId}. Replaces the message content (author-only, within editUntil).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["content"],
+  "properties": {
+    "content": { "$ref": "./defs/messaging.json#/$defs/Content" }
+  }
+}

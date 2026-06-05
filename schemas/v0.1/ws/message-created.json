@@ -29,6 +29,7 @@
                 "clientMessageId": { "type": "string", "minLength": 1 },
                 "author": { "$ref": "../defs/identity.json#/$defs/UserRef" },
                 "createdAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
+                "editedAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
                 "content": { "$ref": "../defs/messaging.json#/$defs/Content" }
               }
             }

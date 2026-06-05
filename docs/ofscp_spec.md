@@ -1103,6 +1103,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `subscribe` | Subscribe this connection to one or more channel streams. | `WsSubscribe` |
 | `unsubscribe` | Unsubscribe this connection from one or more channel streams. | `WsUnsubscribe` |
 | `message.create` | Create (post) a message into a channel timeline. | `WsMessageCreate` |
+| `message.update` | Edit an existing message (author-only, within `editUntil`). | `WsMessageUpdate` |
+| `message.delete` | Delete (tombstone) a message. | `WsMessageDelete` |
 | `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
 | `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
 | `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
@@ -1231,6 +1233,27 @@ Idempotency:
 
 * Clients **SHOULD** set `clientMessageId`.
 * Providers **MUST** treat `(author, channelId, clientMessageId)` as idempotent and respond with the canonical message if a duplicate is received.
+
+#### Editing & deleting messages
+
+**Editing** replaces a message's `content`. Only the **author** may edit, and only while `permissions.editUntil` (§5.3) is in the future; otherwise the provider **MUST** reject with `403`. A successful edit sets `editedAt` on the message and fans out `message.updated` to subscribers.
+
+Client → Server:
+```json
+{ "id": "cli_210", "type": "message.update", "data": { "groupId": "grp_1", "channelId": "chn_general", "messageId": "msg_999", "content": { "mime": "text/plain", "text": "hi (edited)" } } }
+```
+
+**Deleting** is a soft **tombstone**: the message `id` is retained, `content` is cleared, and `deletedAt` is set, so reply references (§5.3) and resume cursors (§7.1) stay valid. The **author** or a member with the `moderate` role may delete. A successful delete fans out `message.deleted`:
+```json
+{ "id": "evt_221", "type": "message.deleted", "ts": "2026-01-01T12:06:00Z", "data": { "groupId": "grp_1", "channelId": "chn_general", "messageId": "msg_999", "deletedAt": "2026-01-01T12:06:00Z" } }
+```
+
+Providers **MAY** reap tombstones after a retention period. Clients **MUST** render a tombstoned message as deleted rather than hiding it outright, to preserve thread/reply context.
+
+**REST equivalents** (for non-WS clients) operate on the same rules:
+
+* `PATCH /api/groups/{groupId}/channels/{channelId}/messages/{messageId}` — body `{ "content": { … } }`; returns the updated message (with `editedAt`).
+* `DELETE /api/groups/{groupId}/channels/{channelId}/messages/{messageId}` — returns `204 No Content`; the message becomes a tombstone.
 
 #### Typing indicators
 
@@ -1521,6 +1544,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Support group membership: join/leave, member listing, roles, and the `request` approval flow (§5.7)
+- [ ] Support message edit (author-only, `editUntil`) and tombstone delete (§7.1)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints

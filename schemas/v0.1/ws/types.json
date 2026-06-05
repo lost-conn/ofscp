@@ -6,7 +6,7 @@
   "$defs": {
     "WsCommandType": {
       "type": "string",
-      "enum": ["authenticate", "subscribe", "unsubscribe", "message.create", "typing.start", "typing.stop", "ping", "pong"]
+      "enum": ["authenticate", "subscribe", "unsubscribe", "message.create", "message.update", "message.delete", "typing.start", "typing.stop", "ping", "pong"]
     },
     "WsEventType": {
       "type": "string",
@@ -31,6 +31,8 @@
         "subscribe",
         "unsubscribe",
         "message.create",
+        "message.update",
+        "message.delete",
         "typing.start",
         "typing.stop",
         "ping",

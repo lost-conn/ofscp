@@ -48,6 +48,14 @@
           "items": { "type": "string" }
         },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "editedAt": {
+          "$ref": "./common.json#/$defs/Rfc3339DateTime",
+          "description": "Set when the message has been edited (§7.1)."
+        },
+        "deletedAt": {
+          "$ref": "./common.json#/$defs/Rfc3339DateTime",
+          "description": "Set when the message is a tombstone: content is cleared and the id is retained (§7.1)."
+        },
         "permissions": { "$ref": "#/$defs/Permissions" },
         "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
       }

@@ -25,6 +25,11 @@
       "minLength": 1,
       "description": "Opaque pagination cursor; treat as an uninterpreted string."
     },
+    "DmId": {
+      "type": "string",
+      "pattern": "^dm_[0-9a-f]{64}$",
+      "description": "Direct-message conversation id, derived deterministically from the participant set (§7.4): `dm_` followed by the lowercase hex SHA-256 of the participants' canonical `handle@domain` refs (lowercased, sorted ascending, LF-joined, UTF-8). Both parties derive the same value with no coordination."
+    },
     "MetadataItem": {
       "type": "object",
       "additionalProperties": true,

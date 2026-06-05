@@ -78,6 +78,18 @@ async function main() {
     ['tests/reaction.sample.json', 'schemas/v0.1/reaction.json'],
     ['tests/messages-page.sample.json', 'schemas/v0.1/messages-page.json'],
     ['tests/problem-details.sample.json', 'schemas/v0.1/problem-details.json'],
+
+    // Contacts (§6.7)
+    ['tests/contact.sample.json', 'schemas/v0.1/contact.json'],
+    ['tests/contact-create-request.sample.json', 'schemas/v0.1/contact-create-request.json'],
+    ['tests/contacts-response.sample.json', 'schemas/v0.1/contacts-response.json'],
+    ['tests/contact-event.sample.json', 'schemas/v0.1/contact-event.json'],
+
+    // Direct messages (§7.4)
+    ['tests/dm-conversation.sample.json', 'schemas/v0.1/dm-conversation.json'],
+    ['tests/dm-conversations-response.sample.json', 'schemas/v0.1/dm-conversations-response.json'],
+    ['tests/dm-message-create-request.sample.json', 'schemas/v0.1/dm-message-create-request.json'],
+    ['tests/ws-dm-message.sample.json', 'schemas/v0.1/ws/dm-message.json'],
     ['tests/tiers-response.sample.json', 'schemas/v0.1/tiers-response.json'],
     [
       'tests/notifications-webhook-registration.sample.json',

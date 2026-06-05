@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/contact-create-request.json",
+  "title": "OFSCP Contact Create Request (v0.1)",
+  "description": "Body of POST /api/me/contacts (§6.7): initiate a contact request to `user`.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["user"],
+  "properties": {
+    "user": { "$ref": "./defs/identity.json#/$defs/UserRef" }
+  }
+}

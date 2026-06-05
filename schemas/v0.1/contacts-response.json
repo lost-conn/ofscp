@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/contacts-response.json",
+  "title": "OFSCP GET /api/me/contacts response (v0.1)",
+  "description": "The authenticated user's contacts, including outstanding `pending` requests in both directions (§6.7).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["contacts", "metadata"],
+  "properties": {
+    "contacts": {
+      "type": "array",
+      "items": { "$ref": "./contact.json" }
+    },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

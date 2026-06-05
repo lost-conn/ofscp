@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/dm-conversations-response.json",
+  "title": "OFSCP GET /api/me/dms response (v0.1)",
+  "description": "Paged list of the authenticated user's DM conversations (§7.4).",
+  "allOf": [
+    { "$ref": "./defs/messaging.json#/$defs/PagedResponse" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "./dm-conversation.json" }
+        }
+      }
+    }
+  ]
+}

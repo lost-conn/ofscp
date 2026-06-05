@@ -1019,6 +1019,50 @@ Example request:
 }
 ```
 
+### 6.7. Contacts
+
+Contacts are an explicit, mutually-consented relationship between two users. They back the `contacts` visibility tier (§6.1): a viewer satisfies the `contacts` tier for a subject only when the two hold a mutual **accepted** contact relationship.
+
+A **Contact** entry, from the authenticated user's perspective:
+```json
+{
+  "user": "bob@b.com",
+  "state": "accepted",
+  "createdAt": "2026-01-01T12:00:00Z",
+  "updatedAt": "2026-01-02T09:30:00Z",
+  "metadata": []
+}
+```
+
+* `state` is `pending` (a request is outstanding) or `accepted`.
+* While `pending`, `direction` is `outgoing` (this user sent the request) or `incoming` (this user received it).
+
+Lifecycle (request → accept):
+
+1. **Initiate** — `POST /api/me/contacts` with `{ "user": "bob@b.com" }` records an `outgoing` `pending` entry for the initiator. **`201 Created`** returns the `Contact`.
+2. **Accept** — `POST /api/me/contacts/{userRef}/accept` promotes the recipient's `incoming` `pending` entry to `accepted`. **`200 OK`** returns the `Contact`.
+3. **Remove** — `DELETE /api/me/contacts/{userRef}` cancels an outgoing request, declines an incoming one, or removes an established contact. **`204 No Content`**.
+
+**Listing** — `GET /api/me/contacts` returns `{ "contacts": [ … ], "metadata": [] }`, including outstanding `pending` entries in both directions.
+
+#### Federation (cross-provider)
+
+When the counterparty is on another provider, the acting client **MUST** mirror the state change to the counterparty's home provider so both sides converge. The client delivers a user-signed (§4.4) request to the counterparty's provider:
+
+```http
+POST /api/federation/contacts
+X-OFSCP-Signature: <signed per §4.4>
+Content-Type: application/json
+
+{ "action": "request", "from": "alice@a.com", "to": "bob@b.com" }
+```
+
+* `action` is `request`, `accept`, or `remove`.
+* The receiving provider authenticates the signer as `from` (§4.5), confirms `to` is one of its local users, and records the corresponding state for `to`. It **MUST** reject with **`403`** if the signer is not `from`.
+* A relationship is **accepted** — and the `contacts` tier (§6.1) satisfied — only once *both* providers hold an `accepted` record, i.e. after a `request` has been answered by an `accept` in the reverse direction.
+
+This mirrors the client-to-remote delivery model used for DMs (§8.3): the user's client, not a backend job, drives cross-provider state.
+
 ---
 
 ## 7. Messaging Lifecycle
@@ -1399,6 +1443,80 @@ Example:
 }
 ```
 
+### 7.4. Direct messages
+
+Direct messages (DMs) are one-to-one conversations between two users that exist outside any group or channel. They reuse the message objects of §5.3 but are addressed by a conversation id (`dmId`) rather than a `(groupId, channelId)` pair.
+
+#### Conversation id (Normative, byte-exact)
+
+A `dmId` is derived deterministically from its participants, so both parties — on possibly different providers — arrive at the same id with no prior coordination:
+
+1. Canonicalize each participant to its `handle@domain` actor form (§2.2) and lowercase it.
+2. Sort the participant strings in ascending Unicode code-point order.
+3. Join them with a single LF (`\n`), UTF-8, with no trailing newline.
+4. Compute the SHA-256 of that string and lowercase-hex encode the digest.
+5. The `dmId` is `dm_` followed by that 64-character hex digest.
+
+v0.1 defines DMs for exactly **two** participants; group DMs are out of scope (§13).
+
+Example — participants `alice@a.com` and `bob@b.com`:
+```
+canonical string: "alice@a.com\nbob@b.com"
+dmId:             dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e46868
+```
+
+#### Source of truth & sender copies (Normative)
+
+Per §8.3, the **recipient's home provider is the sole authoritative store** for a DM. OFSCP v0.1 keeps **no sender copy**: a provider stores a DM only in the *recipient's* inbox. Consequently `GET /api/dms/{dmId}/messages` returns the messages in the authenticated user's own inbox for that conversation — those *received* from the other party. A client that wishes to display its own sent messages **MUST** retain them locally (e.g. an optimistic local echo keyed by `clientMessageId`); the protocol does not reconstruct sent history from the recipient's store.
+
+#### Sending
+
+To send a DM, the client derives the `dmId`, resolves the recipient's home provider from the recipient's domain (§3), and delivers the message there per §8.3:
+
+```http
+POST /api/federation/dms/{dmId}/messages
+X-OFSCP-Signature: <signed per §4.4>
+Content-Type: application/json
+
+{ "clientMessageId": "cmsg_dm_001", "content": { "mime": "text/plain", "text": "hey, are we still on for tomorrow?" } }
+```
+
+This is the single send path whether the recipient is remote or local to the sender's provider (in the local case the recipient's home provider *is* the sender's own). The receiving provider:
+
+* authenticates the signer as the message author (§4.5);
+* **MUST** reject with **`400`** if `{dmId}` does not equal the id derived from `{author, recipient}` — this prevents writing into a conversation the author is not part of (inbox poisoning);
+* applies `(author, dmId, clientMessageId)` idempotency (§7.1), stores the message in the recipient's inbox, and emits `dm.message` to the recipient's subscribers.
+
+#### Listing & reading
+
+* `GET /api/me/dms` — paginated list of the authenticated user's DM conversations (`DmConversation` summaries: `id`, `participants`, optional `lastMessage`, `updatedAt`), using the opaque-cursor paging of §7.2.
+* `GET /api/dms/{dmId}/messages?cursor=…&direction=…&limit=…` — paginated message history from the user's inbox for the conversation, with the same cursor space and response shape as §7.2. Providers **MUST** restrict access to the conversation's participants (**`403`** otherwise) and return **`404`** for an unknown `dmId`.
+
+#### Real-time
+
+A participant receives new DMs in real time over the WebSocket of §7.1 by subscribing with the `dmId` as the subscription target:
+
+```json
+{ "id": "cli_500", "type": "subscribe", "data": { "channels": ["dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e46868"] } }
+```
+
+When a DM is delivered to the user's inbox, the provider emits `dm.message`:
+
+```json
+{
+  "id": "evt_900",
+  "type": "dm.message",
+  "ts": "2026-01-05T18:42:00Z",
+  "data": {
+    "dmId": "dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e46868",
+    "cursor": "opaqueCursorValue",
+    "message": { "id": "msg_77", "author": "alice@a.com", "createdAt": "2026-01-05T18:42:00Z", "content": { "mime": "text/plain", "text": "hey, are we still on for tomorrow?" } }
+  }
+}
+```
+
+Only the recipient receives `dm.message`, since only their inbox stores the message. Editing and deleting DMs follow the same author/tombstone rules as §7.1, applied against the recipient's stored copy.
+
 ---
 
 ## 8. Federation Rules
@@ -1450,9 +1568,13 @@ Recipients **MAY** cache discovery per its HTTP caching headers, but **MUST** re
 
 ### 8.3. Direct messages
 
-* **Source of Truth:** The recipient's home provider acts as the authoritative store for a user's inbox.
-* **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`.
-* **Storage:** The recipient's provider stores the message.
+The local DM lifecycle (conversation id derivation, listing, reading, real-time) is specified in §7.4; this section covers the federation transport.
+
+* **Source of Truth:** The recipient's home provider is the authoritative store for that user's inbox. v0.1 keeps **no sender copy** — a DM is stored only in the recipient's inbox (§7.4).
+* **Conversation id:** `{dmId}` is derived deterministically from the two participants (§7.4); both parties compute it identically without coordination.
+* **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`, user-signed (§4.4). The body is a single message (`clientMessageId`, `content`, optional `attachments` and `reference`).
+* **Verification:** The receiving provider **MUST** reject the delivery with **`400`** when `{dmId}` does not equal the id derived from `{author, recipient}`, preventing delivery into a conversation the author is not part of.
+* **Storage:** The recipient's provider stores the message in the recipient's inbox and emits `dm.message` to the recipient's subscribers (§7.4).
 
 #### Confidentiality (Normative)
 
@@ -1608,6 +1730,8 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Support group membership: join/leave, member listing, roles, and the `request` approval flow (§5.7)
 - [ ] Support message edit (author-only, `editUntil`) and tombstone delete (§7.1)
+- [ ] Support direct messages: deterministic `dmId` derivation, inbox-only storage (no sender copy), the `{dmId}` verification on delivery, conversation listing/reading, and `dm.message` real-time delivery (§7.4)
+- [ ] Support the explicit contacts model (request/accept/remove, local and federated) backing the `contacts` visibility tier (§6.7)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
@@ -1620,6 +1744,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 
 - [ ] Support Ed25519 request signing over the §4.4.2 canonical string (fresh per-request nonce, body digest) for all authenticated requests
 - [ ] Complete the WebSocket signed-challenge handshake before sending other commands (§7.1)
+- [ ] Derive `dmId` per §7.4 and retain locally-sent DMs (no sender copy is stored server-side)
 - [ ] Support all message types or graceful fallback
 
 ### Client **SHOULD**
@@ -1676,6 +1801,7 @@ Client                Remote Provider              Home Provider
 ## 13. Future Work
 
 * End-to-end encryption for DMs (X25519 device encryption keys + prekey bundles + Double Ratchet or MLS); see §8.3 for the reserved hooks
+* Group (multi-party) direct messages; v0.1 DMs are two-party only (§7.4)
 * Rich moderation APIs (ban lists, reporting)
 * Media relay + SFU guidelines for large calls
 * Schema registry governance

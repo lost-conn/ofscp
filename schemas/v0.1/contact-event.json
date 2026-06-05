@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/contact-event.json",
+  "title": "OFSCP Federation Contact Event (v0.1)",
+  "description": "Body of POST /api/federation/contacts (§6.7): a user-signed (§4.4) mirror of a contact state change, delivered by the actor's client to the counterparty's home provider. The receiving provider records the corresponding state for its local user `to`.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["action", "from", "to"],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": ["request", "accept", "remove"],
+      "description": "`request` opens an incoming pending; `accept` promotes it to accepted; `remove` cancels/declines/removes the relationship."
+    },
+    "from": {
+      "$ref": "./defs/identity.json#/$defs/UserRef",
+      "description": "The actor performing the action (the signer)."
+    },
+    "to": {
+      "$ref": "./defs/identity.json#/$defs/UserRef",
+      "description": "The counterparty, local to the receiving provider."
+    }
+  }
+}

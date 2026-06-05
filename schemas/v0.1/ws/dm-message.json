@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/dm-message.json",
+  "title": "OFSCP WS dm.message event (v0.1)",
+  "description": "Emitted to a recipient subscribed to a DM conversation when a message is delivered to their inbox (§7.4). Only the recipient receives it, since only their inbox stores the message.",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "dm.message" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["dmId", "message"],
+          "properties": {
+            "dmId": { "$ref": "../defs/common.json#/$defs/DmId" },
+            "cursor": {
+              "$ref": "../defs/common.json#/$defs/OpaqueCursor",
+              "description": "Opaque position of this event in the conversation timeline (same cursor space as GET /api/dms/{dmId}/messages, §7.4)."
+            },
+            "message": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["id", "author", "createdAt", "content"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "clientMessageId": { "type": "string", "minLength": 1 },
+                "author": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+                "createdAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
+                "content": { "$ref": "../defs/messaging.json#/$defs/Content" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

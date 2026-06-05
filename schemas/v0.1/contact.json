@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/contact.json",
+  "title": "OFSCP Contact (v0.1)",
+  "description": "A contact relationship entry from the perspective of the authenticated user (§6.7). The `contacts` visibility tier (§6.1) is satisfied only by a mutual `accepted` relationship.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["user", "state", "createdAt", "updatedAt", "metadata"],
+  "properties": {
+    "user": {
+      "$ref": "./defs/identity.json#/$defs/UserRef",
+      "description": "The other party in the relationship."
+    },
+    "state": {
+      "type": "string",
+      "enum": ["pending", "accepted"],
+      "description": "`pending` while a request is outstanding; `accepted` once both parties agree."
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["outgoing", "incoming"],
+      "description": "For `pending` relationships: `outgoing` if this user sent the request, `incoming` if it was received. Omitted (or ignored) when `accepted`."
+    },
+    "createdAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "updatedAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/dm-conversation.json",
+  "title": "OFSCP DM Conversation summary (v0.1)",
+  "description": "A direct-message conversation as seen in the authenticated user's conversation list (§7.4). The recipient's inbox is the authoritative store; there is no sender copy (§8.3).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "participants", "updatedAt", "metadata"],
+  "properties": {
+    "id": { "$ref": "./defs/common.json#/$defs/DmId" },
+    "participants": {
+      "type": "array",
+      "description": "The conversation participants. v0.1 supports exactly two.",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "./defs/identity.json#/$defs/UserRef" }
+    },
+    "lastMessage": {
+      "$ref": "./defs/messaging.json#/$defs/BaseMessage",
+      "description": "Most recent message in this user's inbox for the conversation, if any."
+    },
+    "updatedAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

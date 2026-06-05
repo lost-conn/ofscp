@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/discoverable-verification.json",
+  "title": "OFSCP Discoverable Feed Verification Request (v0.1)",
+  "description": "Hub → callback intent-verification request (§8.4), provider-signed (§8.1) by the hub. The subscriber confirms by responding 200 with { \"challenge\": \"<echoed>\" }. Only on a matching echo does the hub activate (subscribe) or remove (unsubscribe) the subscription.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["mode", "topic", "challenge", "leaseSeconds"],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["subscribe", "unsubscribe"]
+    },
+    "topic": {
+      "$ref": "./defs/common.json#/$defs/HttpsUri",
+      "description": "The discoverable feed URL being (un)subscribed (GET .../discoverable)."
+    },
+    "challenge": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Random hub-generated value the subscriber MUST echo to confirm intent."
+    },
+    "leaseSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The lease the hub will grant (for subscribe). 0 for unsubscribe."
+    }
+  }
+}

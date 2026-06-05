@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/discoverable-subscription-request.json",
+  "title": "OFSCP Discoverable Feed Subscription Request (v0.1)",
+  "description": "Body of POST /api/groups/{groupId}/channels/{channelId}/discoverable/subscriptions (§8.4). Provider-signed (§8.1) by the subscribing provider. The hub MUST require the `callback` host to match the signing provider's domain.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["mode", "callback", "leaseSeconds"],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["subscribe", "unsubscribe"]
+    },
+    "callback": {
+      "$ref": "./defs/common.json#/$defs/HttpsUri",
+      "description": "Where feed pushes are delivered. Its host MUST match the signing provider's domain."
+    },
+    "leaseSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Requested subscription lifetime in seconds. The hub MAY grant a shorter lease (RECOMMENDED cap ≤ 7 days) and returns the granted value during verification."
+    }
+  }
+}

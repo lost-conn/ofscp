@@ -1587,8 +1587,77 @@ The device keys of §4 are **signing-only** (Ed25519) in v0.1. The design intent
 
 ### 8.4. Broadcast & discoverability
 
-* Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
-* Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s tier.
+Channels in the `discoverable` tier (§11) syndicate their content to remote providers over a **WebSub-like** protocol. The channel's home provider is the **hub**; a remote provider is a **subscriber**; the **topic** is the channel's feed URL:
+
+```
+GET /api/groups/{groupId}/channels/{channelId}/discoverable
+```
+
+`GET …/discoverable` returns the feed as a paged list of timeline items (the §7.2 shape: `{ items, page }`), and serves as the catch-up/backfill path for subscribers that join late or miss a push.
+
+#### Subscription (lease-based)
+
+A subscriber requests a subscription from the hub, **provider-signed** (§8.1):
+
+```http
+POST /api/groups/{groupId}/channels/{channelId}/discoverable/subscriptions
+X-OFSCP-Provider: b.com
+X-OFSCP-Signature: <provider-signed per §8.1>
+Content-Type: application/json
+
+{ "mode": "subscribe", "callback": "https://b.com/api/federation/discoverable/callbacks/chn_blog", "leaseSeconds": 86400 }
+```
+
+* The hub **MUST** require the `callback` host to match the signing provider's domain, rejecting a mismatch with **`403`** (this stops a provider from naming a victim's URL as the callback).
+* The hub **MUST** only accept subscriptions for channels currently in the `discoverable` tier; otherwise **`404`**/**`403`** per its policy.
+* The hub responds **`202 Accepted`** (verification pending) and does **not** activate the subscription yet.
+
+#### Intent verification (challenge echo)
+
+Before activating (or removing) a subscription, the hub **MUST** confirm the callback genuinely wants it. The hub sends a **provider-signed** (§8.1) verification request to the `callback`:
+
+```http
+POST {callback}
+X-OFSCP-Provider: a.com
+X-OFSCP-Signature: <provider-signed per §8.1>
+Content-Type: application/json
+
+{ "mode": "subscribe", "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable", "challenge": "9f2c1a7e4b8d40f3a1c2e5b6d7f80912", "leaseSeconds": 86400 }
+```
+
+The subscriber **MUST** verify the hub's signature and that it actually requested this `topic`/`mode`, then respond **`200`** echoing `{ "challenge": "9f2c1a7e4b8d40f3a1c2e5b6d7f80912" }`. Only on a matching echo does the hub activate the subscription (for `subscribe`) or remove it (for `unsubscribe`).
+
+#### Lease & renewal
+
+* The hub **MAY** grant a shorter lease than requested (RECOMMENDED cap ≤ 7 days) and returns the granted value as `leaseSeconds` in the verification request, so the subscriber learns the actual lifetime.
+* The subscription is active until `expiresAt = activation + leaseSeconds`. The hub **SHOULD NOT** push after expiry.
+* The subscriber renews by re-running the `subscribe` flow before expiry. A `mode: "unsubscribe"` (also challenge-verified) cancels early.
+
+#### Feed delivery (push)
+
+When a discoverable channel's timeline changes, the hub pushes to each active callback, **provider-signed** (§8.1). The push is a **fat** payload — it carries the changed item(s) directly, and the embedded `provider`/`signature` fields make the stored payload verifiable independent of transport (mirroring §10):
+
+```json
+{
+  "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable",
+  "groupId": "grp_1",
+  "channelId": "chn_blog",
+  "events": [
+    { "kind": "created", "cursor": "opaqueCursorValue", "message": { "id": "msg_500", "author": "jane@a.com", "createdAt": "2026-02-01T09:00:00Z", "content": { "text": "# Spring release notes", "mime": "text/markdown" } } },
+    { "kind": "deleted", "cursor": "opaqueCursorValue2", "message": { "id": "msg_499", "deletedAt": "2026-02-01T09:05:00Z" } }
+  ],
+  "provider": "a.com",
+  "signature": "base64sig=="
+}
+```
+
+* `kind` is `created`, `updated`, or `deleted`. `created`/`updated` carry the full message (§5.3); `deleted` carries a tombstone (`id` + `deletedAt`, content cleared, §7.1). Syndicating `updated`/`deleted` lets subscribers keep cached copies correct and, critically, **propagate deletions** across providers.
+* Delivery is at-least-once; subscribers **MUST** dedupe by message `id` and apply events by `id` (§7.1). The per-event `cursor` shares the feed's timeline space, so a subscriber can backfill gaps via `GET …/discoverable`.
+
+#### Tier enforcement
+
+* The hub **MUST** stop pushing for a channel that leaves the `discoverable` tier, and **SHOULD** cancel its outstanding subscriptions (e.g. a final `unsubscribe` verification).
+* Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel's tier.
 
 ### 8.5. Real-time channel delivery (direct-WS)
 
@@ -1760,6 +1829,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Support the explicit contacts model (request/accept/remove, local and federated) backing the `contacts` visibility tier (§6.7)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Accept direct-WS connections from remote members — resolve remote keys via §4.6, enforce prior membership + tier at subscribe-time — and advertise `capabilities.federation.realtimeDelivery` (§8.5)
+- [ ] For `discoverable` channels, run the WebSub-like feed protocol: lease-based subscriptions with callback-host + challenge-echo verification, provider-signed fat pushes carrying created/updated/deleted, and a paged `GET …/discoverable` catch-up feed (§8.4)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce tiers per channel and group

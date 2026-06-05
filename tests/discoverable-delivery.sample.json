@@ -1,0 +1,27 @@
+{
+  "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable",
+  "groupId": "grp_1",
+  "channelId": "chn_blog",
+  "events": [
+    {
+      "kind": "created",
+      "cursor": "opaqueCursorValue",
+      "message": {
+        "id": "msg_500",
+        "author": "jane@a.com",
+        "createdAt": "2026-02-01T09:00:00Z",
+        "content": { "text": "# Spring release notes", "mime": "text/markdown" }
+      }
+    },
+    {
+      "kind": "deleted",
+      "cursor": "opaqueCursorValue2",
+      "message": {
+        "id": "msg_499",
+        "deletedAt": "2026-02-01T09:05:00Z"
+      }
+    }
+  ],
+  "provider": "a.com",
+  "signature": "base64sig=="
+}

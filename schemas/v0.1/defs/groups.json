@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/defs/groups.json",
+  "title": "OFSCP v0.1 Group & Channel definitions",
+  "type": "object",
+  "$defs": {
+    "Role": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A membership role. Canonical roles are `owner`, `admin`, and `member`; providers MAY define additional roles.",
+      "examples": ["owner", "admin", "member"]
+    },
+    "JoinPolicy": {
+      "type": "string",
+      "enum": ["open", "request", "invite"],
+      "description": "open = anyone may join; request = join requires approval; invite = invitation only."
+    },
+    "ChannelType": {
+      "type": "string",
+      "enum": ["text", "call"]
+    },
+    "GroupPermissions": {
+      "type": "object",
+      "description": "Maps an action to the roles permitted to perform it. Common actions: `post`, `moderate`, `manage`. Providers MAY define additional actions.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/Role" }
+      },
+      "properties": {
+        "post": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "moderate": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "manage": { "type": "array", "items": { "$ref": "#/$defs/Role" } }
+      }
+    },
+    "CallSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["active"],
+      "description": "Lightweight call status for a call channel. Full signaling state is defined in §9.",
+      "properties": {
+        "active": { "type": "boolean" },
+        "participants": {
+          "type": "array",
+          "items": { "$ref": "./identity.json#/$defs/UserRef" }
+        }
+      }
+    },
+    "Group": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "name", "owner", "joinPolicy", "discoverability", "permissions", "createdAt", "updatedAt", "metadata"],
+      "description": "Canonical group object. Channels are not embedded; fetch them via GET /api/groups/{groupId}/channels.",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "owner": { "$ref": "./identity.json#/$defs/UserRef" },
+        "joinPolicy": { "$ref": "#/$defs/JoinPolicy" },
+        "discoverability": { "$ref": "./common.json#/$defs/Discoverability" },
+        "permissions": { "$ref": "#/$defs/GroupPermissions" },
+        "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
+      }
+    },
+    "Channel": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "groupId", "type", "discoverability", "createdAt", "updatedAt", "metadata"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "groupId": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "type": { "$ref": "#/$defs/ChannelType" },
+        "discoverability": { "$ref": "./common.json#/$defs/Discoverability" },
+        "topic": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "call": { "$ref": "#/$defs/CallSummary" },
+        "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
+        "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }
+      }
+    }
+  }
+}

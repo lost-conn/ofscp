@@ -8,17 +8,15 @@
     },
     "contact": "mailto:admin@social.example",
     "authentication": {
-      "issuer": "https://social.example",
-      "jwks_uri": "https://social.example/.well-known/jwks.json",
-      "algorithms": ["RS256"],
-      "audiences": ["ofscp-api"],
-      "login_endpoint": "https://social.example/api/auth/login"
+      "login_endpoint": "https://social.example/api/auth/login",
+      "registration_endpoint": "https://social.example/api/auth/register"
     },
     "publicKeys": [
       {
-        "kid": "sig-2025-01",
-        "alg": "Ed25519",
-        "publicKey": "base64:REPLACE_ME"
+        "key_id": "psk-2025-01",
+        "algorithm": "Ed25519",
+        "public_key": "Mr6nVq8jSzmavf1ZUC8qkLOPCLL+AqxW3kU+9x65EPU=",
+        "created_at": "2025-01-01T00:00:00Z"
       }
     ]
   },

@@ -109,7 +109,15 @@ Content-Type: application/json
     "authentication": {
       "login_endpoint": "https://social.example/api/auth/login",
       "registration_endpoint": "https://social.example/api/auth/register"
-    }
+    },
+    "publicKeys": [
+      {
+        "key_id": "psk-2025-01",
+        "algorithm": "Ed25519",
+        "public_key": "<base64-encoded public key>",
+        "created_at": "2025-01-01T00:00:00Z"
+      }
+    ]
   },
   "capabilities": {
     "messageTypes": ["memo", "article", "message", "reaction"],
@@ -436,37 +444,52 @@ Additionally, some user-adjacent data (notably: presence, bio, and group members
 }
 ```
 
-### 5.3. Group & Channels
+### 5.2. Group & Channels
+
+A **Group** is the canonical container object. Channels are **not** embedded in the group object; they are fetched via `GET /api/groups/{groupId}/channels` (§5.5). This keeps the group representation stable regardless of channel count.
+
+**Group (example):**
 ```json
 {
   "id": "grp_1",
   "name": "Dev Guild",
+  "description": "A group for discussion",
   "owner": "jane@a.com",
+  "joinPolicy": "open",
+  "discoverability": "public",
   "permissions": {
     "post": ["member"],
-    "moderate": ["admin"]
+    "moderate": ["admin"],
+    "manage": ["admin"]
   },
-  "channels": [
-    {
-      "id": "chn_general",
-      "type": "text",
-      "discoverability": "public",
-      "tags": ["announcements"],
-      "metadata": []
-    },
-    {
-      "id": "chn_voice",
-      "type": "call",
-      "discoverability": "group",
-      "call": {
-        "active": false,
-        "participants": []
-      },
-      "metadata": []
-    }
-  ]
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
 }
 ```
+
+* `joinPolicy` is one of `open` (anyone may join), `request` (join requires approval), or `invite` (invitation only).
+* `permissions` maps an **action** to the **roles** permitted to perform it. Canonical actions are `post`, `moderate`, and `manage`; canonical roles are `owner`, `admin`, and `member`. Providers **MAY** define additional actions or roles.
+* `discoverability` uses the per-channel/group tier values (§11).
+
+**Channel (example):**
+```json
+{
+  "id": "chn_general",
+  "groupId": "grp_1",
+  "name": "general",
+  "type": "text",
+  "discoverability": "public",
+  "topic": "General discussion",
+  "tags": ["announcements"],
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
+}
+```
+
+* `type` is one of `text` or `call`. `type` is immutable after creation.
+* A `call`-type channel additionally carries a lightweight `call` summary (`{ "active": false, "participants": [] }`); full signaling state is defined in §9.
 
 ### 5.3. Message Objects
 
@@ -609,7 +632,32 @@ Metadata can be attached to most objects to implement custom features. Such feat
 }
 ```
 
-### 5.5. Group Endpoints
+### 5.5. Group & Channel Endpoints
+
+All endpoints in this section are signed requests (§4.4) unless explicitly marked as unauthenticated. Object shapes are the canonical `Group` and `Channel` of §5.2.
+
+#### POST /api/groups
+
+Creates a group. The authenticated actor becomes the `owner`. Providers **MAY** restrict who can create groups (provider policy).
+
+**Request:**
+```json
+{
+  "name": "Dev Guild",
+  "description": "A group for discussion",
+  "discoverability": "public",
+  "joinPolicy": "open",
+  "permissions": {
+    "post": ["member"],
+    "moderate": ["admin"],
+    "manage": ["admin"]
+  }
+}
+```
+
+`name` is **REQUIRED**; all other fields are optional and providers **SHOULD** apply sensible defaults (RECOMMENDED: `discoverability: "private"`, `joinPolicy: "invite"`).
+
+**Response (`201 Created`):** the created `Group`.
 
 #### GET /api/groups/{groupId}
 
@@ -638,6 +686,60 @@ Fetches metadata for a single group.
 - `403 Forbidden`: Private group and caller is not a member
 
 **Federation:** Remote providers MAY query this endpoint to display group info to users considering joining. Providers MUST enforce discoverability rules for federated requests.
+
+#### PATCH /api/groups/{groupId}
+
+Partially updates a group (name, description, discoverability, joinPolicy, permissions, metadata). Omitted fields are unchanged.
+
+**Authorization:** caller must hold a role permitted by the group's `manage` action (default: `owner`/`admin`).
+
+**Response (`200 OK`):** the updated `Group`. **Errors:** `403` (not permitted), `404` (no such group).
+
+#### DELETE /api/groups/{groupId}
+
+Deletes a group and its channels.
+
+**Authorization:** `owner` only.
+
+**Response:** `204 No Content`. **Errors:** `403`, `404`.
+
+#### GET /api/groups/{groupId}/channels
+
+Lists the channels of a group that are **visible to the caller** (per each channel's discoverability and the caller's membership).
+
+**Response (`200 OK`):**
+```json
+{ "items": [ { "id": "chn_general", "groupId": "grp_1", "type": "text", "discoverability": "public", "createdAt": "2025-03-01T12:00:00Z", "updatedAt": "2025-03-01T12:00:00Z", "metadata": [] } ] }
+```
+
+#### POST /api/groups/{groupId}/channels
+
+Creates a channel in the group.
+
+**Authorization:** caller must hold a role permitted by the group's `manage` action.
+
+**Request:**
+```json
+{ "name": "general", "type": "text", "discoverability": "public", "topic": "General discussion", "tags": ["announcements"] }
+```
+
+`type` is **REQUIRED** and immutable. **Response (`201 Created`):** the created `Channel`.
+
+#### GET /api/groups/{groupId}/channels/{channelId}
+
+Fetches a single channel. **Authorization** mirrors the channel's discoverability (same rules as `GET /api/groups/{groupId}`). **Errors:** `403`, `404`.
+
+#### PATCH /api/groups/{groupId}/channels/{channelId}
+
+Partially updates a channel (name, discoverability, topic, tags, metadata). `type` cannot be changed.
+
+**Authorization:** group `manage` role. **Response (`200 OK`):** the updated `Channel`. **Errors:** `403`, `404`.
+
+#### DELETE /api/groups/{groupId}/channels/{channelId}
+
+Deletes a channel.
+
+**Authorization:** group `manage` role. **Response:** `204 No Content`. **Errors:** `403`, `404`.
 
 ---
 
@@ -897,6 +999,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.create` | Create (post) a message into a channel timeline. | `WsMessageCreate` |
 | `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
 | `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
+| `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
+| `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 
 ##### Server → Client event types
 
@@ -910,6 +1014,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.updated` | A message was updated in a subscribed channel. | `WsMessageUpdated` |
 | `message.deleted` | A message was deleted in a subscribed channel. | `WsMessageDeleted` |
 | `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
+| `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
+| `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 | `error` | Request-scoped error response. | `WsError` |
 
 Rules:
@@ -956,6 +1062,25 @@ Unsubscribe:
   "data": { "channels": ["chn_general"] }
 }
 ```
+
+#### Resuming after a disconnect
+
+Every timeline event (`message.created`, `message.updated`, `message.deleted`) **SHOULD** carry an opaque `cursor` marking its position in the channel timeline. This cursor is in the **same space as REST history** (§7.2), so a client can interleave live events and paged reads without gaps.
+
+To resume, a client includes a per-channel `since` cursor in `subscribe`. The provider **MUST** replay timeline events strictly after each cursor (subject to authorization) before delivering live events, closing the gap between the client's last-seen position and now:
+
+```json
+{
+  "id": "cli_003",
+  "type": "subscribe",
+  "data": {
+    "channels": ["chn_general"],
+    "since": { "chn_general": "opaqueCursorValue" }
+  }
+}
+```
+
+If the gap exceeds what the provider will replay, the provider **MUST** signal truncation (RECOMMENDED: `"truncated": ["chn_general"]` in the `subscribed` ack) so the client falls back to REST history (§7.2) to backfill. Ephemeral events (typing, presence) are **not** replayed.
 
 #### Sending messages
 
@@ -1017,6 +1142,23 @@ Server → Subscribers:
   "data": { "channelId": "chn_general", "user": "alice@a.com", "state": "start" }
 }
 ```
+
+Typing indicators are soft state. A provider **MUST** auto-expire a `start` after a short period without a refreshing `typing.start` (RECOMMENDED 6 seconds) and **MUST** emit a `stop` when a typing user disconnects, so a dropped connection never leaves an indicator stuck.
+
+#### Heartbeat & liveness
+
+Either party **MAY** send a `ping`; the receiver **MUST** reply with `pong`, echoing the ping's `id` in `correlationId`. Providers **SHOULD** send a `ping` periodically (RECOMMENDED every 30 seconds) and **SHOULD** close a connection that has produced no traffic or `pong` within a timeout (RECOMMENDED 60 seconds). This is an application-level heartbeat and does not rely on WebSocket protocol ping/pong frames, which many browser clients cannot observe.
+
+```json
+{ "id": "cli_400", "type": "ping", "data": {} }
+{ "id": "evt_401", "type": "pong", "correlationId": "cli_400", "ts": "2026-01-01T12:00:00Z", "data": {} }
+```
+
+#### Delivery, ordering & limits
+
+* **Ordering:** within a single channel, providers **MUST** deliver timeline events in an order consistent with their `cursor` values (monotonically non-decreasing). No ordering is guaranteed across different channels.
+* **Delivery:** delivery is **at-least-once**. Combined with resume (replay may re-send the boundary event) a client **MAY** see a duplicate, so clients **MUST** de-duplicate by message `id`. The `(author, channelId, clientMessageId)` idempotency rule above prevents duplicate *creation*.
+* **Limits:** providers **MAY** cap the number of subscriptions and the command rate per connection. On exceeding a limit a provider **SHOULD** reply with an `error` (e.g. `code: "rate_limited"` or `code: "subscription_limit"`) and **MAY** close the connection.
 
 ### 7.2. Reading
 
@@ -1105,20 +1247,41 @@ Authentication proves the calling provider domain; authorization is still requir
 * Providers **MUST** apply allow/deny policy for which remote providers may federate.
 * Providers **MUST** enforce channel/group privacy tiers when serving federation traffic.
 
-### 8.1. Remote channel participation
+### 8.1. Provider Signing Identity
+
+Federation involves two kinds of signer:
+
+* **User-signed** requests act on behalf of a specific user (e.g. a remote user joining a channel). They use the user's device key and are verified via the user keys endpoint (§4.6).
+* **Provider-signed** requests act on behalf of the **provider itself**, where no single user is the actor — discoverable-feed delivery (§8.4) and notification webhook delivery (§10). They use the provider's signing key.
+
+Every provider **MUST** publish one or more Ed25519 signing keys in its discovery document under `provider.publicKeys` (§3.1), each with `key_id`, `algorithm`, `public_key`, and an OPTIONAL `created_at`. Providers **MAY** publish multiple keys to support rotation.
+
+A provider-signed request uses the **same canonical string and rules as §4.4.2**, with a single header difference:
+
+* `X-OFSCP-Provider`: the signing provider's domain (replaces `X-OFSCP-Actor`).
+* `X-OFSCP-Key-ID`, `X-OFSCP-Timestamp`, `X-OFSCP-Nonce`, `X-OFSCP-Content-Digest`, `X-OFSCP-Signature`: exactly as in §4.4.1.
+
+To verify, the recipient:
+
+1. Performs §4.5 steps 1–5 (header presence, authority match, timestamp skew, nonce replay, body digest).
+2. Fetches the signing provider's discovery document, selects the `provider.publicKeys` entry matching `X-OFSCP-Key-ID`, and verifies the Ed25519 signature (as in §4.5 step 7).
+
+Recipients **MAY** cache discovery per its HTTP caching headers, but **MUST** re-fetch on a verification failure for a `key_id` they believe should be valid (mirroring §4.6) so key rotation is picked up promptly.
+
+### 8.2. Remote channel participation
 
 * Remote users access a channel via `POST /api/groups/{groupId}/channels/{channelId}/join` on the channel’s home provider.
 * Home provider authenticates the remote user by calling their home provider’s discovery document and verifying signed federation requests.
 
-### 8.2. Direct messages
+### 8.3. Direct messages
 
 * **Source of Truth:** The recipient's home provider acts as the authoritative store for a user's inbox.
 * **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`.
 * **Storage:** The recipient's provider stores the message.
 
-### 8.3. Broadcast & discoverability
+### 8.4. Broadcast & discoverability
 
-* Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks.
+* Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
 * Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s privacy tier.
 
 ---
@@ -1185,6 +1348,8 @@ Delivery payload:
 }
 ```
 
+Delivery requests **MUST** be **provider-signed** (§8.1): the originating provider signs the HTTP delivery request with its signing key, and the receiver verifies it against the originating provider's `provider.publicKeys` (§3.1). The `provider` field names the signer and the `signature` field carries the originating provider's detached Ed25519 signature (base64) over the canonical delivery payload, so a stored payload remains verifiable independent of transport.
+
 ---
 
 ## 11. Privacy & Discoverability Tiers
@@ -1242,6 +1407,9 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Validate Ed25519 request signatures over the §4.4.2 canonical string, including authority binding and nonce replay rejection
 - [ ] Authenticate WebSocket connections via the signed `auth.challenge`/`authenticate` handshake (§7.1)
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
+- [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
+- [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
+- [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier

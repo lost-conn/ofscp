@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/pong.json",
+  "title": "OFSCP WS pong (v0.1)",
+  "description": "Reply to a `ping`. correlationId SHOULD echo the ping's id.",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "pong" }
+      }
+    }
+  ]
+}

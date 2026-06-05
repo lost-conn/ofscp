@@ -23,6 +23,11 @@
               "type": "array",
               "items": { "$ref": "./types.json#/$defs/WsEventType" },
               "description": "Optional whitelist of event types to receive. If omitted, provider-defined defaults apply."
+            },
+            "since": {
+              "type": "object",
+              "description": "Optional per-channel resume cursors (channelId -> opaque cursor from a prior timeline event or REST page). The provider replays message events after each cursor, then goes live.",
+              "additionalProperties": { "$ref": "../defs/common.json#/$defs/OpaqueCursor" }
             }
           }
         }

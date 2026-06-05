@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/channel-create-request.json",
+  "title": "OFSCP Channel Create Request (v0.1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["type"],
+  "properties": {
+    "name": { "type": "string" },
+    "type": { "$ref": "./defs/groups.json#/$defs/ChannelType" },
+    "discoverability": { "$ref": "./defs/common.json#/$defs/Discoverability" },
+    "topic": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

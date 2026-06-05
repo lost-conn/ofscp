@@ -133,6 +133,10 @@ Content-Type: application/json
     },
     "federation": {
       "realtimeDelivery": "direct-ws"
+    },
+    "discovery": {
+      "sharesKnownProviders": true,
+      "discoverFeed": true
     }
   }
 }
@@ -1676,7 +1680,7 @@ Cross-provider consumption is built from primitives already defined:
 * **Following & the home feed (§7.6):** a user follows channels (including remote ones) and the client composes a single feed by reading each channel from its home provider. This is how a user "subscribes" to a blog or announcement channel and sees new posts come to them.
 * **Reads & real-time (§7.2, §8.5):** history comes from paged reads, and live updates from the channel's WebSocket — connecting directly to the channel's home provider for remote channels (§8.5).
 
-**Discoverability** — helping a user *find* new content — is a provider-local, optional concern (§11.2), not a federation protocol. A provider **MAY** recommend `discoverable`-tier content to its own users; how it sources or ranks recommendations is provider-defined. Cross-provider discovery/search is left to a future version (§13).
+**Discoverability** — helping a user *find* new content — is an optional concern (§11.2), not a syndication protocol. A provider **MAY** recommend `discoverable`-tier content (from local channels and its known providers, §8.6) to its own users; how it sources or ranks recommendations is provider-defined. A richer standardized cross-provider search/ranking mechanism is left to a future version (§13).
 
 ### 8.5. Real-time channel delivery (direct-WS)
 
@@ -1700,6 +1704,26 @@ Because the home provider owns the timeline and fans out to **all** subscribers 
 * A user holds **one** WebSocket per *foreign* provider it participates in, multiplexing all of that provider's channels over that single connection. A user with channels on its home provider plus two others maintains three connections total.
 * Providers **MAY** apply the per-connection subscription and rate limits of §7.1 to remote connections, and **MAY** apply the allow/deny federation policy of §8 (Authorization) at connect-time, closing disallowed connections with an `error` then close code `4001` (§7.1).
 * Guest accounts are **not federated** (§4.8) and **MUST NOT** open remote WebSocket connections; remote providers **MAY** refuse them.
+
+### 8.6. Known providers (peer discovery)
+
+To support discovery (§11.2) without a central registry, a provider **MAY** maintain a list of **known providers** (peers). Everything here is **optional**: a provider may keep no list at all, and may decline to share the list it has.
+
+#### Maintaining the list
+
+How a provider populates its known-providers list is **provider-defined**. Common sources: remote users joining local channels (§8.2), remote providers federating in, manual curation by operators, and scraping other providers' shared lists (below). A provider **MAY** apply its §8 allow/deny policy to decide which peers to record or trust.
+
+#### Sharing the list
+
+```
+GET /api/providers
+```
+
+* Returns `{ "providers": [ { "domain", "name"?, "addedAt"? } ], "metadata": [] }`. Each entry's `domain` resolves to that peer's discovery document (§3.1), so a reader can follow the graph.
+* A provider that does not maintain a list returns **`404`**; one that maintains a list but declines to share returns **`403`**. A provider **MAY** return a partial list at its discretion.
+* Sharing this list exposes part of the federation graph; providers **SHOULD** weigh that before enabling it, and advertise their choice via `capabilities.discovery.sharesKnownProviders` (§3.1).
+
+A provider grows its own list by scraping peers' `GET /api/providers`, seeded from any peer it already knows (initial seeding is out of scope — e.g. an operator adds one peer manually).
 
 ---
 
@@ -1831,13 +1855,20 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 
 ### 11.2. Discoverability (recommendations)
 
-Discoverability is an **optional, provider-local** feature: a provider **MAY** help its own users find new content by recommending channels or posts in the `discoverable` tier. This is not a federation protocol — there is no cross-provider push or syndication (§8.4).
+Discoverability is an **optional** feature for helping users *find* new content. It is **not** syndication — there is no cross-provider content push or replication (§8.4). A provider compiles recommendations and serves them to its own users; the actual content is always read live from its home provider.
 
-* What a provider recommends, and how it sources or ranks it, is **provider-defined** (e.g. local popularity, editorial picks, the user's follows and groups).
-* A provider **MAY** expose recommendations at `GET /api/discover`, returning a page of timeline items or channel references in the §7.2 shape (`{ items, page }`). Clients **MUST NOT** assume this endpoint exists.
-* Recommendations **MUST** respect each item's tier and the viewer's access; only `discoverable`-tier (or otherwise viewer-accessible) content may be surfaced.
+#### Discovery feed
 
-This area is intentionally minimal in v0.1; a richer, possibly cross-provider discovery/search mechanism is future work (§13).
+```
+GET /api/discover
+```
+
+* A provider **MAY** compile a **discovery feed** from `discoverable`-tier channels — both local channels and channels on its known providers (§8.6) — and expose it here. Clients **MUST NOT** assume this endpoint exists (`404` if not offered), and **SHOULD** check `capabilities.discovery.discoverFeed` (§3.1).
+* The response is a paged `{ items, page }` (§7.2 paging). Each item is a **pointer** to a discoverable channel (`channel`, optional `groupId`/`provider`) and **MAY** include a non-authoritative `sample` preview of a recent message. Clients read the real content (and follow, §7.6) from the channel's home provider — the feed never becomes a second store.
+* **How the feed is compiled and ranked is provider-defined** (e.g. local popularity, editorial picks, peer breadth, the user's follows and groups).
+* Recommendations **MUST** respect each item's tier and the viewer's access: only `discoverable`-tier (or otherwise viewer-accessible) content may be surfaced. A provider **MAY** offer multiple or filtered feeds via provider-defined query parameters.
+
+This area is intentionally lightweight in v0.1; a richer, standardized cross-provider search/ranking mechanism is future work (§13).
 
 ---
 
@@ -1866,6 +1897,11 @@ This area is intentionally minimal in v0.1; a richer, possibly cross-provider di
 - [ ] Support the `private` tier
 - [ ] Expose `GET /api/tiers` endpoint
 - [ ] Provide metadata schema registry (optional entries allowed)
+
+### Provider **MAY** (optional)
+
+- [ ] Maintain and share a known-providers list at `GET /api/providers`, and advertise `capabilities.discovery.sharesKnownProviders` (§8.6)
+- [ ] Compile a discovery feed at `GET /api/discover` from discoverable channels (local + known providers) as pointers, and advertise `capabilities.discovery.discoverFeed` (§11.2)
 
 ### Client **MUST**
 
@@ -1931,7 +1967,7 @@ Client                Remote Provider              Home Provider
 
 * End-to-end encryption for DMs (X25519 device encryption keys + prekey bundles + Double Ratchet or MLS); see §8.3 for the reserved hooks
 * Group (multi-party) direct messages; v0.1 DMs are two-party only (§7.4)
-* Cross-provider discovery/search for finding `discoverable` content across the federation; v0.1 discoverability is provider-local recommendations only (§8.4, §11.2)
+* Richer, standardized cross-provider discovery/search & ranking; v0.1 provides only optional known-provider lists (§8.6) and provider-compiled discovery feeds (§11.2)
 * Rich moderation APIs (ban lists, reporting)
 * Media relay + SFU guidelines for large calls
 * Schema registry governance

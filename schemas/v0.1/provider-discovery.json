@@ -160,6 +160,21 @@
               "description": "How this provider delivers real-time channel events to remote members. `direct-ws`: remote members open a WebSocket directly to this provider's wss://{domain}/api/ws and authenticate via the §7.1 signed handshake (§8.5). `none`: no cross-provider real-time delivery."
             }
           }
+        },
+        "discovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Optional cross-provider discovery features. All optional (§8.6, §11.2).",
+          "properties": {
+            "sharesKnownProviders": {
+              "type": "boolean",
+              "description": "Whether GET /api/providers returns this provider's known-providers list (§8.6). A provider MAY maintain a list privately and still set this false."
+            },
+            "discoverFeed": {
+              "type": "boolean",
+              "description": "Whether GET /api/discover offers a compiled discovery feed (§11.2)."
+            }
+          }
         }
       }
     },

@@ -95,6 +95,10 @@ async function main() {
     ['tests/follow.sample.json', 'schemas/v0.1/follow.json'],
     ['tests/follow-create-request.sample.json', 'schemas/v0.1/follow-create-request.json'],
     ['tests/follows-response.sample.json', 'schemas/v0.1/follows-response.json'],
+
+    // Cross-provider discovery (§8.6, §11.2)
+    ['tests/providers-response.sample.json', 'schemas/v0.1/providers-response.json'],
+    ['tests/discover-response.sample.json', 'schemas/v0.1/discover-response.json'],
     ['tests/tiers-response.sample.json', 'schemas/v0.1/tiers-response.json'],
     [
       'tests/notifications-webhook-registration.sample.json',

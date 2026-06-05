@@ -34,6 +34,10 @@
     },
     "federation": {
       "realtimeDelivery": "direct-ws"
+    },
+    "discovery": {
+      "sharesKnownProviders": true,
+      "discoverFeed": true
     }
   }
 }

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/providers-response.json",
+  "title": "OFSCP GET /api/providers response (v0.1)",
+  "description": "A provider's optional list of known peer providers (§8.6). How the list is maintained is provider-defined; a provider MAY decline to maintain or to share it (404/403).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["providers", "metadata"],
+  "properties": {
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["domain"],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Peer provider domain; its discovery document is at https://{domain}/.well-known/ofscp-provider (§3.1)."
+          },
+          "name": { "type": "string" },
+          "addedAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" }
+        }
+      }
+    },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

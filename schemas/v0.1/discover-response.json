@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/discover-response.json",
+  "title": "OFSCP GET /api/discover response (v0.1)",
+  "description": "An optional, provider-compiled discovery feed (§11.2) drawn from discoverable-tier channels on known providers (§8.6). Items are pointers (recommendations), not authoritative copies — clients read the real content from each channel's home provider. How the feed is compiled and ranked is provider-defined.",
+  "allOf": [
+    { "$ref": "./defs/messaging.json#/$defs/PagedResponse" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["channel"],
+            "properties": {
+              "channel": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Reference (URI) to a discoverable channel being recommended."
+              },
+              "groupId": { "type": "string", "minLength": 1 },
+              "provider": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Domain of the channel's home provider."
+              },
+              "sample": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Optional cached preview of a recent message (non-authoritative); clients read the live message from the source.",
+                "required": ["id"],
+                "properties": {
+                  "id": { "type": "string", "minLength": 1 },
+                  "author": { "$ref": "./defs/identity.json#/$defs/UserRef" },
+                  "createdAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+                  "content": { "$ref": "./defs/messaging.json#/$defs/Content" }
+                }
+              },
+              "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,0 @@
-{
-  "mode": "subscribe",
-  "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable",
-  "challenge": "9f2c1a7e4b8d40f3a1c2e5b6d7f80912",
-  "leaseSeconds": 86400
-}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/follow-create-request.json",
+  "title": "OFSCP Follow Create Request (v0.1)",
+  "description": "Body of POST /api/me/follows (§7.6): start following a channel the user has access to.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["channel"],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the channel to follow — a URI for remote channels (§2.4); MAY be a local id for same-provider channels."
+    },
+    "groupId": { "type": "string", "minLength": 1 }
+  }
+}

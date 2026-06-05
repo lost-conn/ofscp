@@ -1576,6 +1576,32 @@ The provider applies the subject's presence visibility policy (§6.1, including 
 
 Presence for a **remote** user is obtained by subscribing on that user's home provider over the direct-WS connection a client already holds for that provider (§8.5); a provider answers `presence.subscribe` for the users it hosts. There is no provider-to-provider presence relay in v0.1.
 
+### 7.6. Follows & the home feed
+
+A user can **follow** channels they have access to (e.g. a blog channel, a forum's announcements, a friend's memo channel). Following lets a client present new content from many channels — across many providers — in a single **home feed**, which is the core convenience OFSCP exists to provide.
+
+#### Single source of truth (Normative)
+
+A follow is a **pointer**, not a copy. The provider stores only *which* channels a user follows; it does **not** replicate or store a compiled feed. The home feed is **composed by the client**, which reads each followed channel from its one authoritative source. This keeps each message stored in exactly one place (its channel's home provider) and avoids the state-mismatch and deletion-propagation problems of syndication.
+
+#### Managing the follow list
+
+* `GET /api/me/follows` — returns `{ "follows": [ Follow ], "metadata": [] }`, where each `Follow` is `{ channel, groupId?, createdAt, metadata }` and `channel` is a channel reference (a URI for remote channels, §2.4).
+* `POST /api/me/follows` — body `{ "channel": "<ref>", "groupId"?: "<ref>" }`; starts following. The provider **SHOULD** verify the user currently has access to the channel and reject with **`403`** otherwise. **`201 Created`** returns the `Follow`. Idempotent: following an already-followed channel returns the existing entry.
+* `DELETE /api/me/follows/{channelRef}` — stops following. **`204 No Content`**.
+
+#### Composing the feed (client-side)
+
+To build the home feed, the client:
+
+1. Reads the follow list (`GET /api/me/follows`).
+2. For each followed channel, reads recent history from **that channel's home provider** via paged reads (`GET …/messages`, §7.2) and/or subscribes for live updates (§7.1 locally, or the direct-WS connection to a remote provider, §8.5).
+3. Merges the results into one timeline ordered by `createdAt`, applying edits/deletes (§7.1) as they arrive from each source.
+
+Because reads come straight from each source, a followed channel's edits, tombstones, and access changes are always current — there is no cached copy to drift. If a user loses access to a followed channel, reads simply fail and the client drops it from the feed (the stale pointer **MAY** be pruned).
+
+Providers **MUST NOT** be required to compile or store a feed. A provider **MAY** offer an optional convenience endpoint that fans out these reads live on the client's behalf, but it **MUST NOT** store the result, and clients **MUST NOT** depend on it existing.
+
 ---
 
 ## 8. Federation Rules
@@ -1604,7 +1630,7 @@ Authentication proves the calling provider domain; authorization is still requir
 Federation involves two kinds of signer:
 
 * **User-signed** requests act on behalf of a specific user (e.g. a remote user joining a channel). They use the user's device key and are verified via the user keys endpoint (§4.6).
-* **Provider-signed** requests act on behalf of the **provider itself**, where no single user is the actor — discoverable-feed delivery (§8.4) and notification webhook delivery (§10). They use the provider's signing key.
+* **Provider-signed** requests act on behalf of the **provider itself**, where no single user is the actor — e.g. notification webhook delivery (§10). They use the provider's signing key.
 
 Every provider **MUST** publish one or more Ed25519 signing keys in its discovery document under `provider.publicKeys` (§3.1), each with `key_id`, `algorithm`, `public_key`, and an OPTIONAL `created_at`. Providers **MAY** publish multiple keys to support rotation.
 
@@ -1643,77 +1669,14 @@ The device keys of §4 are **signing-only** (Ed25519) in v0.1. The design intent
 
 ### 8.4. Broadcast & discoverability
 
-Channels in the `discoverable` tier (§11) syndicate their content to remote providers over a **WebSub-like** protocol. The channel's home provider is the **hub**; a remote provider is a **subscriber**; the **topic** is the channel's feed URL:
+OFSCP v0.1 does **not** syndicate or replicate content between providers. In keeping with the single-source-of-truth principle, a message is stored only by its channel's home provider, and remote consumers read it **live** from that source. There is no provider-to-provider feed push.
 
-```
-GET /api/groups/{groupId}/channels/{channelId}/discoverable
-```
+Cross-provider consumption is built from primitives already defined:
 
-`GET …/discoverable` returns the feed as a paged list of timeline items (the §7.2 shape: `{ items, page }`), and serves as the catch-up/backfill path for subscribers that join late or miss a push.
+* **Following & the home feed (§7.6):** a user follows channels (including remote ones) and the client composes a single feed by reading each channel from its home provider. This is how a user "subscribes" to a blog or announcement channel and sees new posts come to them.
+* **Reads & real-time (§7.2, §8.5):** history comes from paged reads, and live updates from the channel's WebSocket — connecting directly to the channel's home provider for remote channels (§8.5).
 
-#### Subscription (lease-based)
-
-A subscriber requests a subscription from the hub, **provider-signed** (§8.1):
-
-```http
-POST /api/groups/{groupId}/channels/{channelId}/discoverable/subscriptions
-X-OFSCP-Provider: b.com
-X-OFSCP-Signature: <provider-signed per §8.1>
-Content-Type: application/json
-
-{ "mode": "subscribe", "callback": "https://b.com/api/federation/discoverable/callbacks/chn_blog", "leaseSeconds": 86400 }
-```
-
-* The hub **MUST** require the `callback` host to match the signing provider's domain, rejecting a mismatch with **`403`** (this stops a provider from naming a victim's URL as the callback).
-* The hub **MUST** only accept subscriptions for channels currently in the `discoverable` tier; otherwise **`404`**/**`403`** per its policy.
-* The hub responds **`202 Accepted`** (verification pending) and does **not** activate the subscription yet.
-
-#### Intent verification (challenge echo)
-
-Before activating (or removing) a subscription, the hub **MUST** confirm the callback genuinely wants it. The hub sends a **provider-signed** (§8.1) verification request to the `callback`:
-
-```http
-POST {callback}
-X-OFSCP-Provider: a.com
-X-OFSCP-Signature: <provider-signed per §8.1>
-Content-Type: application/json
-
-{ "mode": "subscribe", "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable", "challenge": "9f2c1a7e4b8d40f3a1c2e5b6d7f80912", "leaseSeconds": 86400 }
-```
-
-The subscriber **MUST** verify the hub's signature and that it actually requested this `topic`/`mode`, then respond **`200`** echoing `{ "challenge": "9f2c1a7e4b8d40f3a1c2e5b6d7f80912" }`. Only on a matching echo does the hub activate the subscription (for `subscribe`) or remove it (for `unsubscribe`).
-
-#### Lease & renewal
-
-* The hub **MAY** grant a shorter lease than requested (RECOMMENDED cap ≤ 7 days) and returns the granted value as `leaseSeconds` in the verification request, so the subscriber learns the actual lifetime.
-* The subscription is active until `expiresAt = activation + leaseSeconds`. The hub **SHOULD NOT** push after expiry.
-* The subscriber renews by re-running the `subscribe` flow before expiry. A `mode: "unsubscribe"` (also challenge-verified) cancels early.
-
-#### Feed delivery (push)
-
-When a discoverable channel's timeline changes, the hub pushes to each active callback, **provider-signed** (§8.1). The push is a **fat** payload — it carries the changed item(s) directly, and the embedded `provider`/`signature` fields make the stored payload verifiable independent of transport (mirroring §10):
-
-```json
-{
-  "topic": "https://a.com/api/groups/grp_1/channels/chn_blog/discoverable",
-  "groupId": "grp_1",
-  "channelId": "chn_blog",
-  "events": [
-    { "kind": "created", "cursor": "opaqueCursorValue", "message": { "id": "msg_500", "author": "jane@a.com", "createdAt": "2026-02-01T09:00:00Z", "content": { "text": "# Spring release notes", "mime": "text/markdown" } } },
-    { "kind": "deleted", "cursor": "opaqueCursorValue2", "message": { "id": "msg_499", "deletedAt": "2026-02-01T09:05:00Z" } }
-  ],
-  "provider": "a.com",
-  "signature": "base64sig=="
-}
-```
-
-* `kind` is `created`, `updated`, or `deleted`. `created`/`updated` carry the full message (§5.3); `deleted` carries a tombstone (`id` + `deletedAt`, content cleared, §7.1). Syndicating `updated`/`deleted` lets subscribers keep cached copies correct and, critically, **propagate deletions** across providers.
-* Delivery is at-least-once; subscribers **MUST** dedupe by message `id` and apply events by `id` (§7.1). The per-event `cursor` shares the feed's timeline space, so a subscriber can backfill gaps via `GET …/discoverable`.
-
-#### Tier enforcement
-
-* The hub **MUST** stop pushing for a channel that leaves the `discoverable` tier, and **SHOULD** cancel its outstanding subscriptions (e.g. a final `unsubscribe` verification).
-* Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel's tier.
+**Discoverability** — helping a user *find* new content — is a provider-local, optional concern (§11.2), not a federation protocol. A provider **MAY** recommend `discoverable`-tier content to its own users; how it sources or ranks recommendations is provider-defined. Cross-provider discovery/search is left to a future version (§13).
 
 ### 8.5. Real-time channel delivery (direct-WS)
 
@@ -1836,7 +1799,7 @@ The following table describes the canonical tiers (the extended descriptions are
 | Private | Invite-only | No federation, no broadcast. |
 | Group | Accessible to group members |  No federation, no broadcast. |
 | Public | Visible to anyone with link | Read-only without join, but not broadcast. |
-| Discoverable | Searchable and syndicated | Providers publish updates to subscribers. |
+| Discoverable | Public and eligible for discovery | Readable like `public`; **MAY** be surfaced by a provider's recommendations (§11.2). No replication — consumed live from the source. |
 
 ### 11.1. Tier Discovery
 
@@ -1866,6 +1829,16 @@ GET /api/tiers
 
 Clients **MUST** surface these tiers and allow owners to change them (subject to provider policy).
 
+### 11.2. Discoverability (recommendations)
+
+Discoverability is an **optional, provider-local** feature: a provider **MAY** help its own users find new content by recommending channels or posts in the `discoverable` tier. This is not a federation protocol — there is no cross-provider push or syndication (§8.4).
+
+* What a provider recommends, and how it sources or ranks it, is **provider-defined** (e.g. local popularity, editorial picks, the user's follows and groups).
+* A provider **MAY** expose recommendations at `GET /api/discover`, returning a page of timeline items or channel references in the §7.2 shape (`{ items, page }`). Clients **MUST NOT** assume this endpoint exists.
+* Recommendations **MUST** respect each item's tier and the viewer's access; only `discoverable`-tier (or otherwise viewer-accessible) content may be surfaced.
+
+This area is intentionally minimal in v0.1; a richer, possibly cross-provider discovery/search mechanism is future work (§13).
+
 ---
 
 ## 12. Compliance Checklist
@@ -1885,7 +1858,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Support the explicit contacts model (request/accept/remove, local and federated) backing the `contacts` visibility tier (§6.7)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Accept direct-WS connections from remote members — resolve remote keys via §4.6, enforce prior membership + tier at subscribe-time — and advertise `capabilities.federation.realtimeDelivery` (§8.5)
-- [ ] For `discoverable` channels, run the WebSub-like feed protocol: lease-based subscriptions with callback-host + challenge-echo verification, provider-signed fat pushes carrying created/updated/deleted, and a paged `GET …/discoverable` catch-up feed (§8.4)
+- [ ] Support the follow list (`GET`/`POST`/`DELETE /api/me/follows`) as pointers only — no server-side feed compilation or content replication (§7.6)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support real-time presence over WebSocket: `presence.subscribe`/`set`, `presence.update` fan-out, connection-derived online/offline, and §6.1 visibility filtering consistent with the REST presence endpoint (§7.5)
 - [ ] Support message fan-out + notification endpoints
@@ -1900,6 +1873,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Complete the WebSocket signed-challenge handshake before sending other commands (§7.1)
 - [ ] Derive `dmId` per §7.4 and retain locally-sent DMs (no sender copy is stored server-side)
 - [ ] For remote channels, open the real-time WebSocket to the channel's home provider (not the user's own) and complete the §7.1 handshake there (§8.5)
+- [ ] Compose the home feed client-side by reading each followed channel live from its source (§7.6); do not rely on a server-compiled feed
 - [ ] Support all message types or graceful fallback
 
 ### Client **SHOULD**
@@ -1957,6 +1931,7 @@ Client                Remote Provider              Home Provider
 
 * End-to-end encryption for DMs (X25519 device encryption keys + prekey bundles + Double Ratchet or MLS); see §8.3 for the reserved hooks
 * Group (multi-party) direct messages; v0.1 DMs are two-party only (§7.4)
+* Cross-provider discovery/search for finding `discoverable` content across the federation; v0.1 discoverability is provider-local recommendations only (§8.4, §11.2)
 * Rich moderation APIs (ban lists, reporting)
 * Media relay + SFU guidelines for large calls
 * Schema registry governance

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/follow.json",
+  "title": "OFSCP Follow (v0.1)",
+  "description": "A channel the authenticated user follows (§7.6). A follow is a pointer only — the channel's home provider remains the single source of truth; the client composes its home feed by reading each followed channel live.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["channel", "createdAt", "metadata"],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the followed channel — a URI for remote channels (§2.4); MAY be a local id for same-provider channels."
+    },
+    "groupId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional reference to the channel's group, for client convenience."
+    },
+    "createdAt": { "$ref": "./defs/common.json#/$defs/Rfc3339DateTime" },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

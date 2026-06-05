@@ -91,10 +91,10 @@ async function main() {
     ['tests/dm-message-create-request.sample.json', 'schemas/v0.1/dm-message-create-request.json'],
     ['tests/ws-dm-message.sample.json', 'schemas/v0.1/ws/dm-message.json'],
 
-    // Discoverable feed (WebSub-like, §8.4)
-    ['tests/discoverable-subscription-request.sample.json', 'schemas/v0.1/discoverable-subscription-request.json'],
-    ['tests/discoverable-verification.sample.json', 'schemas/v0.1/discoverable-verification.json'],
-    ['tests/discoverable-delivery.sample.json', 'schemas/v0.1/discoverable-delivery.json'],
+    // Follows & home feed (§7.6)
+    ['tests/follow.sample.json', 'schemas/v0.1/follow.json'],
+    ['tests/follow-create-request.sample.json', 'schemas/v0.1/follow-create-request.json'],
+    ['tests/follows-response.sample.json', 'schemas/v0.1/follows-response.json'],
     ['tests/tiers-response.sample.json', 'schemas/v0.1/tiers-response.json'],
     [
       'tests/notifications-webhook-registration.sample.json',

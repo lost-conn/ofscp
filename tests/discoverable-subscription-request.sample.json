@@ -1,5 +1,0 @@
-{
-  "mode": "subscribe",
-  "callback": "https://b.com/api/federation/discoverable/callbacks/chn_blog",
-  "leaseSeconds": 86400
-}

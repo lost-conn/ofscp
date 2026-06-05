@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/follows-response.json",
+  "title": "OFSCP GET /api/me/follows response (v0.1)",
+  "description": "The authenticated user's followed channels (§7.6). Pointers only; the home feed is composed client-side from these.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["follows", "metadata"],
+  "properties": {
+    "follows": {
+      "type": "array",
+      "items": { "$ref": "./follow.json" }
+    },
+    "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "Dev Guild",
   "description": "A group for discussion",
-  "discoverability": "public",
+  "tier": "public",
   "joinPolicy": "open",
   "permissions": {
     "post": ["member"],

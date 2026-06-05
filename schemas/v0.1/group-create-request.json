@@ -8,7 +8,7 @@
   "properties": {
     "name": { "type": "string", "minLength": 1 },
     "description": { "type": "string" },
-    "discoverability": { "$ref": "./defs/common.json#/$defs/Discoverability" },
+    "tier": { "$ref": "./defs/common.json#/$defs/Tier" },
     "joinPolicy": { "$ref": "./defs/groups.json#/$defs/JoinPolicy" },
     "permissions": { "$ref": "./defs/groups.json#/$defs/GroupPermissions" },
     "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }

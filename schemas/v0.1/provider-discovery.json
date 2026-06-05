@@ -110,10 +110,11 @@
             ]
           }
         },
-        "discoverability": {
+        "tiers": {
           "type": "array",
+          "description": "The access/discoverability tiers this provider supports (see §11 and GET /api/tiers).",
           "items": {
-            "$ref": "./defs/common.json#/$defs/Discoverability"
+            "$ref": "./defs/common.json#/$defs/Tier"
           }
         },
         "metadataSchemas": {

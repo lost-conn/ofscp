@@ -4,7 +4,7 @@
   "description": "A group for discussion",
   "owner": "jane@a.com",
   "joinPolicy": "open",
-  "discoverability": "public",
+  "tier": "public",
   "permissions": {
     "post": ["member"],
     "moderate": ["admin"],

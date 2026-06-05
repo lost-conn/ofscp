@@ -44,9 +44,11 @@
       "items": { "$ref": "#/$defs/MetadataItem" },
       "default": []
     },
-    "Discoverability": {
+    "Tier": {
       "type": "string",
-      "enum": ["private", "group", "public", "discoverable"]
+      "minLength": 1,
+      "description": "Access/discoverability tier for a group or channel. Canonical values: `private` (REQUIRED of every provider), `group`, `public`, `discoverable`. Providers MAY define additional tiers; clients learn the available set via GET /api/tiers (§11).",
+      "examples": ["private", "group", "public", "discoverable"]
     },
     "VisibilityPolicy": {
       "type": "string",

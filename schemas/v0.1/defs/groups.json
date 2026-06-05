@@ -48,7 +48,7 @@
     "Group": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "name", "owner", "joinPolicy", "discoverability", "permissions", "createdAt", "updatedAt", "metadata"],
+      "required": ["id", "name", "owner", "joinPolicy", "tier", "permissions", "createdAt", "updatedAt", "metadata"],
       "description": "Canonical group object. Channels are not embedded; fetch them via GET /api/groups/{groupId}/channels.",
       "properties": {
         "id": { "type": "string", "minLength": 1 },
@@ -56,7 +56,7 @@
         "description": { "type": "string" },
         "owner": { "$ref": "./identity.json#/$defs/UserRef" },
         "joinPolicy": { "$ref": "#/$defs/JoinPolicy" },
-        "discoverability": { "$ref": "./common.json#/$defs/Discoverability" },
+        "tier": { "$ref": "./common.json#/$defs/Tier" },
         "permissions": { "$ref": "#/$defs/GroupPermissions" },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
@@ -66,13 +66,13 @@
     "Channel": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "groupId", "type", "discoverability", "createdAt", "updatedAt", "metadata"],
+      "required": ["id", "groupId", "type", "tier", "createdAt", "updatedAt", "metadata"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "groupId": { "type": "string", "minLength": 1 },
         "name": { "type": "string" },
         "type": { "$ref": "#/$defs/ChannelType" },
-        "discoverability": { "$ref": "./common.json#/$defs/Discoverability" },
+        "tier": { "$ref": "./common.json#/$defs/Tier" },
         "topic": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
         "call": { "$ref": "#/$defs/CallSummary" },

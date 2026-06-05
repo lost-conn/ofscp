@@ -22,7 +22,7 @@
   },
   "capabilities": {
     "messageTypes": ["memo", "article", "message", "reaction"],
-    "discoverability": ["private", "group", "public", "discoverable"],
+    "tiers": ["private", "group", "public", "discoverable"],
     "metadataSchemas": [
       {
         "id": "com.example.poll",

@@ -1,7 +1,7 @@
 {
   "name": "general",
   "type": "text",
-  "discoverability": "public",
+  "tier": "public",
   "topic": "General discussion",
   "tags": ["announcements"],
   "metadata": []

@@ -8,7 +8,7 @@
   "properties": {
     "name": { "type": "string" },
     "type": { "$ref": "./defs/groups.json#/$defs/ChannelType" },
-    "discoverability": { "$ref": "./defs/common.json#/$defs/Discoverability" },
+    "tier": { "$ref": "./defs/common.json#/$defs/Tier" },
     "topic": { "type": "string" },
     "tags": { "type": "array", "items": { "type": "string" } },
     "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }

@@ -121,7 +121,7 @@ Content-Type: application/json
   },
   "capabilities": {
     "messageTypes": ["memo", "article", "message", "reaction"],
-    "discoverability": ["private", "group", "public", "discoverable"],
+    "tiers": ["private", "group", "public", "discoverable"],
     "metadataSchemas": [
       {
         "id": "com.example.poll",
@@ -348,7 +348,7 @@ A provider receiving a signed request **MUST** perform the following checks **in
 6. Resolve the actor's public keys (§4.6), select the key whose `key_id` matches `X-OFSCP-Key-ID`, and confirm it is not revoked → `401`.
 7. Reconstruct the canonical string (§4.4.2) and verify the Ed25519 signature → `401`.
 
-Only after **all** checks pass is the request authenticated as the actor. Authorization (group/channel membership, privacy tier, etc.) is then applied separately.
+Only after **all** checks pass is the request authenticated as the actor. Authorization (group/channel membership, tier, etc.) is then applied separately.
 
 ### 4.6. Public Key Discovery
 
@@ -456,7 +456,7 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
   "description": "A group for discussion",
   "owner": "jane@a.com",
   "joinPolicy": "open",
-  "discoverability": "public",
+  "tier": "public",
   "permissions": {
     "post": ["member"],
     "moderate": ["admin"],
@@ -470,7 +470,7 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
 
 * `joinPolicy` is one of `open` (anyone may join), `request` (join requires approval), or `invite` (invitation only).
 * `permissions` maps an **action** to the **roles** permitted to perform it. Canonical actions are `post`, `moderate`, and `manage`; canonical roles are `owner`, `admin`, and `member`. Providers **MAY** define additional actions or roles.
-* `discoverability` uses the per-channel/group tier values (§11).
+* `tier` is the group's access/discoverability tier (§11). The same field appears on channels.
 
 **Channel (example):**
 ```json
@@ -479,7 +479,7 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
   "groupId": "grp_1",
   "name": "general",
   "type": "text",
-  "discoverability": "public",
+  "tier": "public",
   "topic": "General discussion",
   "tags": ["announcements"],
   "createdAt": "2025-03-01T12:00:00Z",
@@ -645,7 +645,7 @@ Creates a group. The authenticated actor becomes the `owner`. Providers **MAY** 
 {
   "name": "Dev Guild",
   "description": "A group for discussion",
-  "discoverability": "public",
+  "tier": "public",
   "joinPolicy": "open",
   "permissions": {
     "post": ["member"],
@@ -655,7 +655,7 @@ Creates a group. The authenticated actor becomes the `owner`. Providers **MAY** 
 }
 ```
 
-`name` is **REQUIRED**; all other fields are optional and providers **SHOULD** apply sensible defaults (RECOMMENDED: `discoverability: "private"`, `joinPolicy: "invite"`).
+`name` is **REQUIRED**; all other fields are optional and providers **SHOULD** apply sensible defaults (RECOMMENDED: `tier: "private"`, `joinPolicy: "invite"`).
 
 **Response (`201 Created`):** the created `Group`.
 
@@ -664,8 +664,8 @@ Creates a group. The authenticated actor becomes the `owner`. Providers **MAY** 
 Fetches metadata for a single group.
 
 **Authorization:**
-- Public groups (`discoverability: "public"` or `"discoverable"`): No authentication required
-- Private groups (`discoverability: "private"` or `"group"`): Requires valid authentication and the caller must be a group member
+- Public groups (`tier: "public"` or `"discoverable"`): No authentication required
+- Private groups (`tier: "private"` or `"group"`): Requires valid authentication and the caller must be a group member
 
 **Response (200 OK):**
 ```json
@@ -675,7 +675,7 @@ Fetches metadata for a single group.
   "description": "A group for discussion",
   "owner": "alice@provider.example",
   "joinPolicy": "open",
-  "discoverability": "public",
+  "tier": "public",
   "createdAt": "2024-01-15T10:30:00Z",
   "updatedAt": "2024-01-15T10:30:00Z"
 }
@@ -685,11 +685,11 @@ Fetches metadata for a single group.
 - `404 Not Found`: Group does not exist
 - `403 Forbidden`: Private group and caller is not a member
 
-**Federation:** Remote providers MAY query this endpoint to display group info to users considering joining. Providers MUST enforce discoverability rules for federated requests.
+**Federation:** Remote providers MAY query this endpoint to display group info to users considering joining. Providers MUST enforce tier visibility rules for federated requests.
 
 #### PATCH /api/groups/{groupId}
 
-Partially updates a group (name, description, discoverability, joinPolicy, permissions, metadata). Omitted fields are unchanged.
+Partially updates a group (name, description, tier, joinPolicy, permissions, metadata). Omitted fields are unchanged.
 
 **Authorization:** caller must hold a role permitted by the group's `manage` action (default: `owner`/`admin`).
 
@@ -705,11 +705,11 @@ Deletes a group and its channels.
 
 #### GET /api/groups/{groupId}/channels
 
-Lists the channels of a group that are **visible to the caller** (per each channel's discoverability and the caller's membership).
+Lists the channels of a group that are **visible to the caller** (per each channel's tier and the caller's membership).
 
 **Response (`200 OK`):**
 ```json
-{ "items": [ { "id": "chn_general", "groupId": "grp_1", "type": "text", "discoverability": "public", "createdAt": "2025-03-01T12:00:00Z", "updatedAt": "2025-03-01T12:00:00Z", "metadata": [] } ] }
+{ "items": [ { "id": "chn_general", "groupId": "grp_1", "type": "text", "tier": "public", "createdAt": "2025-03-01T12:00:00Z", "updatedAt": "2025-03-01T12:00:00Z", "metadata": [] } ] }
 ```
 
 #### POST /api/groups/{groupId}/channels
@@ -720,18 +720,18 @@ Creates a channel in the group.
 
 **Request:**
 ```json
-{ "name": "general", "type": "text", "discoverability": "public", "topic": "General discussion", "tags": ["announcements"] }
+{ "name": "general", "type": "text", "tier": "public", "topic": "General discussion", "tags": ["announcements"] }
 ```
 
 `type` is **REQUIRED** and immutable. **Response (`201 Created`):** the created `Channel`.
 
 #### GET /api/groups/{groupId}/channels/{channelId}
 
-Fetches a single channel. **Authorization** mirrors the channel's discoverability (same rules as `GET /api/groups/{groupId}`). **Errors:** `403`, `404`.
+Fetches a single channel. **Authorization** mirrors the channel's tier (same rules as `GET /api/groups/{groupId}`). **Errors:** `403`, `404`.
 
 #### PATCH /api/groups/{groupId}/channels/{channelId}
 
-Partially updates a channel (name, discoverability, topic, tags, metadata). `type` cannot be changed.
+Partially updates a channel (name, tier, topic, tags, metadata). `type` cannot be changed.
 
 **Authorization:** group `manage` role. **Response (`200 OK`):** the updated `Channel`. **Errors:** `403`, `404`.
 
@@ -1245,7 +1245,7 @@ Recipients **MUST** reject any `(X-OFSCP-Key-ID, X-OFSCP-Nonce)` pair already se
 Authentication proves the calling provider domain; authorization is still required:
 
 * Providers **MUST** apply allow/deny policy for which remote providers may federate.
-* Providers **MUST** enforce channel/group privacy tiers when serving federation traffic.
+* Providers **MUST** enforce channel/group tiers when serving federation traffic.
 
 ### 8.1. Provider Signing Identity
 
@@ -1282,7 +1282,7 @@ Recipients **MAY** cache discovery per its HTTP caching headers, but **MUST** re
 ### 8.4. Broadcast & discoverability
 
 * Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
-* Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s privacy tier.
+* Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s tier.
 
 ---
 
@@ -1352,13 +1352,13 @@ Delivery requests **MUST** be **provider-signed** (§8.1): the originating provi
 
 ---
 
-## 11. Privacy & Discoverability Tiers
+## 11. Tiers (Access & Discoverability)
 
-Privacy tiers are configured on a **per-channel** basis.
+A **tier** is the access/discoverability level of a group or channel, carried in the `tier` field (§5.2) and advertised in discovery under `capabilities.tiers` (§3.1). Tiers are configured per-channel and per-group.
 
-Providers **MAY** define their own set of privacy tiers to suit their community needs. However, all providers **MUST** support a `private` tier.
+Providers **MAY** define their own set of tiers to suit their community needs. However, all providers **MUST** support the `private` tier. The canonical tiers are `private`, `group`, `public`, and `discoverable`.
 
-The following table lists **examples** of common configurations (non-normative suggestions):
+The following table describes the canonical tiers (the extended descriptions are non-normative suggestions):
 
 | Tier | Description | Rules |
 | --- | --- | --- |
@@ -1411,9 +1411,9 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
-- [ ] Enforce privacy tiers per channel
-- [ ] Support 'private' channel tier
-- [ ] Expose `GET /tiers` endpoint
+- [ ] Enforce tiers per channel and group
+- [ ] Support the `private` tier
+- [ ] Expose `GET /api/tiers` endpoint
 - [ ] Provide metadata schema registry (optional entries allowed)
 
 ### Client **MUST**
@@ -1425,7 +1425,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 ### Client **SHOULD**
 
 - [ ] Render metadata extensions when schemas known
-- [ ] Provide UX for discoverability + privacy tiers
+- [ ] Provide UX for tiers (access + discoverability)
 - [ ] Handle federation latency + retries
 
 ---

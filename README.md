@@ -53,12 +53,14 @@ Projects that have implemented OFSCP, whether you're looking for example code or
 ### Providers
 
 - [Forumall](https://github.com/lost-conn/forumall)
-  An easily-deployable provider with a web client embedded.
+  A provider and client implementation built with Dioxus, making it easy to host a provider with a web client.
 
 ### Clients
 
 - [Forumall](https://github.com/lost-conn/forumall)
   See above.
+- [Rorumall](https://github.com/joeleaver/rorumall)
+  A desktop client in the vein of Forumall built with the excellent rinch rust library.
 
 Working on an implementation of your own? I'd love to know about it, feel free to make a PR!
 

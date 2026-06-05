@@ -130,6 +130,9 @@ Content-Type: application/json
     ],
     "limits": {
       "maxUploadBytes": 26214400
+    },
+    "federation": {
+      "realtimeDelivery": "direct-ws"
     }
   }
 }
@@ -1587,6 +1590,29 @@ The device keys of §4 are **signing-only** (Ed25519) in v0.1. The design intent
 * Channels marked `discoverable` publish a feed at `GET /api/groups/{groupId}/channels/{channelId}/discoverable`. Remote providers subscribe using WebSub-like callbacks; feed-delivery pushes are **provider-signed** (§8.1).
 * Receiving providers decide whether to display, ignore, or re-rank discoverable content but **MUST** respect the channel’s tier.
 
+### 8.5. Real-time channel delivery (direct-WS)
+
+OFSCP v0.1 delivers real-time channel events across providers with a **direct-WebSocket** model: a remote member connects its WebSocket **straight to the channel's home provider** and subscribes there, exactly as a local member does (§7.1). The channel's home provider is the single authority for the channel timeline; there is no message relay or store-and-forward between providers for channel messages.
+
+A provider advertises support with `capabilities.federation.realtimeDelivery: "direct-ws"` in discovery (§3.1).
+
+#### Remote subscribe flow
+
+1. **Join first.** The remote user **MUST** already be a member of the channel, having joined via `POST /api/groups/{groupId}/channels/{channelId}/join` on the home provider (§8.2). Membership and channel/group tier (§8 Authorization) are what authorize real-time access; subscribing does **not** implicitly join.
+2. **Connect.** The remote client opens a WebSocket to the channel's home provider at `wss://{homeProviderDomain}/api/ws` (§7.1) — *not* to its own home provider.
+3. **Authenticate.** The client completes the signed-challenge handshake of §7.1 using its device key. Because the actor is remote, the home provider resolves the actor's public keys from the actor's home provider via the keys endpoint (§4.6), then verifies the `authenticate` signature normally. Key caching, rotation, and re-fetch-on-failure follow §4.6.
+4. **Subscribe.** The client sends `subscribe` with the channel id(s). The provider enforces membership + tier at subscription-time (§7.1) and rejects unauthorized subscriptions with an `error` (`code: "forbidden"`). Resume (`since` cursors) and the `ping`/`pong` heartbeat work identically to the local case.
+
+#### Edit & delete propagation
+
+Because the home provider owns the timeline and fans out to **all** subscribers directly, federated edits and deletes need no separate propagation protocol: `message.updated` and `message.deleted` (tombstones, §7.1) reach remote members over the same direct WebSocket as local members. A remote member that was disconnected during an edit/delete backfills it through the standard §7.1 resume (`since` cursor) or REST history (§7.2) — the cursor space is shared, so no edit is missed.
+
+#### Connection & scale notes
+
+* A user holds **one** WebSocket per *foreign* provider it participates in, multiplexing all of that provider's channels over that single connection. A user with channels on its home provider plus two others maintains three connections total.
+* Providers **MAY** apply the per-connection subscription and rate limits of §7.1 to remote connections, and **MAY** apply the allow/deny federation policy of §8 (Authorization) at connect-time, closing disallowed connections with an `error` then close code `4001` (§7.1).
+* Guest accounts are **not federated** (§4.8) and **MUST NOT** open remote WebSocket connections; remote providers **MAY** refuse them.
+
 ---
 
 ## 9. Real-time Calls
@@ -1733,6 +1759,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Support direct messages: deterministic `dmId` derivation, inbox-only storage (no sender copy), the `{dmId}` verification on delivery, conversation listing/reading, and `dm.message` real-time delivery (§7.4)
 - [ ] Support the explicit contacts model (request/accept/remove, local and federated) backing the `contacts` visibility tier (§6.7)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
+- [ ] Accept direct-WS connections from remote members — resolve remote keys via §4.6, enforce prior membership + tier at subscribe-time — and advertise `capabilities.federation.realtimeDelivery` (§8.5)
 - [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce tiers per channel and group
@@ -1745,6 +1772,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Support Ed25519 request signing over the §4.4.2 canonical string (fresh per-request nonce, body digest) for all authenticated requests
 - [ ] Complete the WebSocket signed-challenge handshake before sending other commands (§7.1)
 - [ ] Derive `dmId` per §7.4 and retain locally-sent DMs (no sender copy is stored server-side)
+- [ ] For remote channels, open the real-time WebSocket to the channel's home provider (not the user's own) and complete the §7.1 handshake there (§8.5)
 - [ ] Support all message types or graceful fallback
 
 ### Client **SHOULD**

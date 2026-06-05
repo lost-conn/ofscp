@@ -148,6 +148,18 @@
               "description": "Maximum attachment upload size in bytes; uploads over this return 413."
             }
           }
+        },
+        "federation": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Cross-provider real-time capabilities (§8.5).",
+          "properties": {
+            "realtimeDelivery": {
+              "type": "string",
+              "enum": ["direct-ws", "none"],
+              "description": "How this provider delivers real-time channel events to remote members. `direct-ws`: remote members open a WebSocket directly to this provider's wss://{domain}/api/ws and authenticate via the §7.1 signed handshake (§8.5). `none`: no cross-provider real-time delivery."
+            }
+          }
         }
       }
     },

@@ -31,6 +31,9 @@
     ],
     "limits": {
       "maxUploadBytes": 26214400
+    },
+    "federation": {
+      "realtimeDelivery": "direct-ws"
     }
   }
 }

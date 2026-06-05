@@ -693,8 +693,14 @@ Fetches metadata for a single group.
   "owner": "alice@provider.example",
   "joinPolicy": "open",
   "tier": "public",
+  "permissions": {
+    "post": ["member"],
+    "moderate": ["admin"],
+    "manage": ["admin"]
+  },
   "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:30:00Z"
+  "updatedAt": "2024-01-15T10:30:00Z",
+  "metadata": []
 }
 ```
 

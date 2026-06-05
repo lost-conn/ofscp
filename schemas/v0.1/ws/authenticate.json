@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/authenticate.json",
+  "title": "OFSCP WS authenticate command (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "authenticate" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["actor", "keyId", "timestamp", "signature"],
+          "properties": {
+            "actor": { "$ref": "../defs/identity.json#/$defs/UserRef" },
+            "keyId": { "type": "string", "minLength": 1 },
+            "timestamp": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" },
+            "signature": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Base64 Ed25519 signature over the ws-authenticate canonical string (§7.1)."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

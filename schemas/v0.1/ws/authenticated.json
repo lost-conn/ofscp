@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/authenticated.json",
+  "title": "OFSCP WS authenticated event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "authenticated" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["actor"],
+          "properties": {
+            "actor": { "$ref": "../defs/identity.json#/$defs/UserRef" }
+          }
+        }
+      }
+    }
+  ]
+}

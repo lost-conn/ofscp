@@ -1,5 +1,5 @@
 {
-    "actor": "@alice@provider.com",
+    "actor": "alice@provider.com",
     "keys": [
         {
             "key_id": "dk_123",

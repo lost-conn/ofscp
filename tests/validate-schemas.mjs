@@ -76,6 +76,9 @@ async function main() {
     ['tests/call-ice.sample.json', 'schemas/v0.1/call-ice.json'],
 
     // WebSocket realtime messaging (v0.1)
+    ['tests/ws-auth-challenge.sample.json', 'schemas/v0.1/ws/auth-challenge.json'],
+    ['tests/ws-authenticate.sample.json', 'schemas/v0.1/ws/authenticate.json'],
+    ['tests/ws-authenticated.sample.json', 'schemas/v0.1/ws/authenticated.json'],
     ['tests/ws-subscribe.sample.json', 'schemas/v0.1/ws/subscribe.json'],
     ['tests/ws-unsubscribe.sample.json', 'schemas/v0.1/ws/unsubscribe.json'],
     ['tests/ws-subscribed.sample.json', 'schemas/v0.1/ws/subscribed.json'],
@@ -92,6 +95,7 @@ async function main() {
     // Authentication & Device Keys
     ['tests/auth-registration-request.sample.json', 'schemas/v0.1/auth-registration-request.json'],
     ['tests/auth-login-request.sample.json', 'schemas/v0.1/auth-login-request.json'],
+    ['tests/auth-bootstrap-response.sample.json', 'schemas/v0.1/auth-bootstrap-response.json'],
     ['tests/device-key-registration.sample.json', 'schemas/v0.1/device-key-registration.json'],
     ['tests/device-key-response.sample.json', 'schemas/v0.1/device-key-response.json'],
     ['tests/user-keys-response.sample.json', 'schemas/v0.1/user-keys-response.json']

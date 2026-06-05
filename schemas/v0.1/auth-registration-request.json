@@ -11,6 +11,11 @@
         "password": {
             "type": "string",
             "minLength": 8
+        },
+        "recoveryEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Optional address used for password recovery (§4.1.3)."
         }
     },
     "required": [

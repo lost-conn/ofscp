@@ -1,0 +1,11 @@
+{
+  "id": "cli_a1",
+  "type": "authenticate",
+  "ts": "2026-01-01T12:00:01Z",
+  "data": {
+    "actor": "alice@providerA.com",
+    "keyId": "dk_abc123xyz",
+    "timestamp": "2026-01-01T12:00:01Z",
+    "signature": "5lzq7Ji0hNF8VVG9RhzTbyTQ5rNyYRKuVi6VssT0TPqc23EU+DhZRk/dL0snxLkLtibG2hq5ZhKvoiFlEz7yBg=="
+  }
+}

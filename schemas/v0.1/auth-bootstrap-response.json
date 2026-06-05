@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/ofscp/schemas/v0.1/auth-bootstrap-response.json",
+    "title": "OFSCP Bootstrap Token Response",
+    "description": "Returned by POST /api/auth/register and POST /api/auth/login. The bootstrap token authorizes only POST /api/auth/device-keys (§4.2).",
+    "type": "object",
+    "properties": {
+        "bootstrap_token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque, high-entropy, short-lived token scoped to device-key registration."
+        },
+        "token_type": {
+            "type": "string",
+            "const": "bootstrap"
+        },
+        "expires_in": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Token lifetime in seconds (RECOMMENDED 300)."
+        }
+    },
+    "required": [
+        "bootstrap_token",
+        "token_type",
+        "expires_in"
+    ],
+    "additionalProperties": true
+}

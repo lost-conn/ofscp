@@ -9,6 +9,11 @@
             "minLength": 1,
             "description": "Base64-encoded Ed25519 public key"
         },
+        "algorithm": {
+            "type": "string",
+            "enum": ["Ed25519"],
+            "description": "Key algorithm. v0.1 defines Ed25519 only (§4.3.3)."
+        },
         "device_name": {
             "type": "string",
             "description": "Human-readable device description"

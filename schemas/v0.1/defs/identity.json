@@ -5,14 +5,14 @@
   "type": "object",
   "$defs": {
     "UserRef": {
-      "description": "User reference. Spec examples often use handle@domain strings; for interoperability, IDs SHOULD be HTTPS URIs (but clients must treat as opaque).",
+      "description": "User reference. The canonical actor form is `handle@domain` (no leading '@'). For interoperability an HTTPS URI MAY also be used; clients MUST treat the value as opaque.",
       "oneOf": [
         {
           "$ref": "./common.json#/$defs/HttpsUri"
         },
         {
           "type": "string",
-          "pattern": "^@?[^@\\s]+@[^@\\s]+$",
+          "pattern": "^[^@\\s]+@[^@\\s]+$",
           "examples": [
             "jane@a.com"
           ]

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/auth-challenge.json",
+  "title": "OFSCP WS auth.challenge event (v0.1)",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "auth.challenge" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["nonce", "expiresAt"],
+          "properties": {
+            "nonce": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Server-generated challenge (>=128-bit) the client must sign."
+            },
+            "expiresAt": { "$ref": "../defs/common.json#/$defs/Rfc3339DateTime" }
+          }
+        }
+      }
+    }
+  ]
+}

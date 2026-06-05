@@ -97,6 +97,8 @@ async function main() {
     ['tests/ws-typing-start.sample.json', 'schemas/v0.1/ws/typing-start.json'],
     ['tests/ws-typing-stop.sample.json', 'schemas/v0.1/ws/typing-stop.json'],
     ['tests/ws-channel-typing.sample.json', 'schemas/v0.1/ws/channel-typing.json'],
+    ['tests/ws-ping.sample.json', 'schemas/v0.1/ws/ping.json'],
+    ['tests/ws-pong.sample.json', 'schemas/v0.1/ws/pong.json'],
     ['tests/ws-error.sample.json', 'schemas/v0.1/ws/error.json'],
 
     // Authentication & Device Keys

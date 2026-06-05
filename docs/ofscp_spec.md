@@ -999,6 +999,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.create` | Create (post) a message into a channel timeline. | `WsMessageCreate` |
 | `typing.start` | Signal typing started in a channel (ephemeral). | `WsTypingStart` |
 | `typing.stop` | Signal typing stopped in a channel (ephemeral). | `WsTypingStop` |
+| `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
+| `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 
 ##### Server → Client event types
 
@@ -1012,6 +1014,8 @@ The `type` field **MUST** be one of the following standardized strings.
 | `message.updated` | A message was updated in a subscribed channel. | `WsMessageUpdated` |
 | `message.deleted` | A message was deleted in a subscribed channel. | `WsMessageDeleted` |
 | `channel.typing` | Typing indicator event for a channel. | `WsChannelTyping` |
+| `ping` | Liveness heartbeat; peer **MUST** reply `pong`. Either party may send. | `WsPing` |
+| `pong` | Reply to a `ping` (echoes its `id` in `correlationId`). | `WsPong` |
 | `error` | Request-scoped error response. | `WsError` |
 
 Rules:
@@ -1058,6 +1062,25 @@ Unsubscribe:
   "data": { "channels": ["chn_general"] }
 }
 ```
+
+#### Resuming after a disconnect
+
+Every timeline event (`message.created`, `message.updated`, `message.deleted`) **SHOULD** carry an opaque `cursor` marking its position in the channel timeline. This cursor is in the **same space as REST history** (§7.2), so a client can interleave live events and paged reads without gaps.
+
+To resume, a client includes a per-channel `since` cursor in `subscribe`. The provider **MUST** replay timeline events strictly after each cursor (subject to authorization) before delivering live events, closing the gap between the client's last-seen position and now:
+
+```json
+{
+  "id": "cli_003",
+  "type": "subscribe",
+  "data": {
+    "channels": ["chn_general"],
+    "since": { "chn_general": "opaqueCursorValue" }
+  }
+}
+```
+
+If the gap exceeds what the provider will replay, the provider **MUST** signal truncation (RECOMMENDED: `"truncated": ["chn_general"]` in the `subscribed` ack) so the client falls back to REST history (§7.2) to backfill. Ephemeral events (typing, presence) are **not** replayed.
 
 #### Sending messages
 
@@ -1119,6 +1142,23 @@ Server → Subscribers:
   "data": { "channelId": "chn_general", "user": "alice@a.com", "state": "start" }
 }
 ```
+
+Typing indicators are soft state. A provider **MUST** auto-expire a `start` after a short period without a refreshing `typing.start` (RECOMMENDED 6 seconds) and **MUST** emit a `stop` when a typing user disconnects, so a dropped connection never leaves an indicator stuck.
+
+#### Heartbeat & liveness
+
+Either party **MAY** send a `ping`; the receiver **MUST** reply with `pong`, echoing the ping's `id` in `correlationId`. Providers **SHOULD** send a `ping` periodically (RECOMMENDED every 30 seconds) and **SHOULD** close a connection that has produced no traffic or `pong` within a timeout (RECOMMENDED 60 seconds). This is an application-level heartbeat and does not rely on WebSocket protocol ping/pong frames, which many browser clients cannot observe.
+
+```json
+{ "id": "cli_400", "type": "ping", "data": {} }
+{ "id": "evt_401", "type": "pong", "correlationId": "cli_400", "ts": "2026-01-01T12:00:00Z", "data": {} }
+```
+
+#### Delivery, ordering & limits
+
+* **Ordering:** within a single channel, providers **MUST** deliver timeline events in an order consistent with their `cursor` values (monotonically non-decreasing). No ordering is guaranteed across different channels.
+* **Delivery:** delivery is **at-least-once**. Combined with resume (replay may re-send the boundary event) a client **MAY** see a duplicate, so clients **MUST** de-duplicate by message `id`. The `(author, channelId, clientMessageId)` idempotency rule above prevents duplicate *creation*.
+* **Limits:** providers **MAY** cap the number of subscriptions and the command rate per connection. On exceeding a limit a provider **SHOULD** reply with an `error` (e.g. `code: "rate_limited"` or `code: "subscription_limit"`) and **MAY** close the connection.
 
 ### 7.2. Reading
 
@@ -1369,6 +1409,7 @@ Clients **MUST** surface these tiers and allow owners to change them (subject to
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Publish provider signing key(s) in discovery and sign provider-to-provider requests (§8.1)
+- [ ] Support WebSocket resume (`since` replay with per-message cursors) and the `ping`/`pong` heartbeat (§7.1)
 - [ ] Support message fan-out + notification endpoints
 - [ ] Enforce privacy tiers per channel
 - [ ] Support 'private' channel tier

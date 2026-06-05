@@ -2,5 +2,7 @@
   "presenceVisibility": "sharedGroups",
   "profileVisibility": "public",
   "membershipVisibility": "contacts",
+  "allowList": ["jane@a.com"],
+  "denyList": ["spammer@b.com"],
   "metadata": []
 }

@@ -32,6 +32,27 @@
         "manage": { "type": "array", "items": { "$ref": "#/$defs/Role" } }
       }
     },
+    "ChannelPermissions": {
+      "type": "object",
+      "description": "Per-channel permission overrides (§5.2). Maps a channel action to the roles permitted to perform it, refining the group's `permissions`. Grant actions (`view`, `post:message`, `post:memo`, `post:article`, `react`) are rank-inherited: an actor is allowed when their role rank is at least the minimum rank among the listed roles (owner is always allowed). When an action is omitted the channel inherits the group equivalent (`post:*` and `react` fall back to group `post`; `view` falls back to the channel `tier`). `replyOnly` is a restriction, not a grant: actors whose role rank is at most the maximum rank among the listed roles (owner exempt) may post only when the message carries a `reference` (i.e. is a reply). `replyOnlyTo`, when present, further constrains such replies so the referenced parent message's `type` must be one of the listed types.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/Role" }
+      },
+      "properties": {
+        "view": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "post:message": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "post:memo": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "post:article": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "react": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "replyOnly": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "replyOnlyTo": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["message", "memo", "article"] },
+          "description": "Parent message types a reply-restricted actor may reply to. Omitted = any type."
+        }
+      }
+    },
     "CallSummary": {
       "type": "object",
       "additionalProperties": true,
@@ -75,6 +96,7 @@
         "tier": { "$ref": "./common.json#/$defs/Tier" },
         "topic": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
+        "permissions": { "$ref": "#/$defs/ChannelPermissions" },
         "call": { "$ref": "#/$defs/CallSummary" },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },

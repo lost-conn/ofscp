@@ -508,6 +508,41 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
 * `type` is one of `text` or `call`. `type` is immutable after creation.
 * A `call`-type channel **MAY** include a lightweight `call` summary (`{ "active": false, "participants": [] }`) for convenience (e.g. rendering channel lists). It is a **derived, read-time projection** of the authoritative call state (§9.1) and **MUST** reflect it — not an independently-stored or separately-mutable field. Full signaling state is defined in §9.
 
+#### 5.2.1. Per-channel permissions
+
+A channel **MAY** carry an optional `permissions` object that refines the group's `permissions` for that channel. It uses the same action→roles shape as group permissions and is **purely additive** — a provider or client that ignores it MUST still interoperate, falling back to group-level permissions and the channel `tier`.
+
+```json
+{
+  "id": "chn_announce",
+  "groupId": "grp_1",
+  "name": "announcements",
+  "type": "text",
+  "tier": "group",
+  "permissions": {
+    "view": ["member"],
+    "post:message": ["admin"],
+    "post:memo": ["admin"],
+    "post:article": ["admin"],
+    "react": ["member"],
+    "replyOnly": ["member"],
+    "replyOnlyTo": ["memo", "article"]
+  },
+  "createdAt": "2025-03-01T12:00:00Z",
+  "updatedAt": "2025-03-01T12:00:00Z",
+  "metadata": []
+}
+```
+
+* **Grant actions** — `view`, `post:message`, `post:memo`, `post:article`, and `react` — are **rank-inherited**, identical to group permissions: an actor is allowed when their role rank is **≥** the minimum rank among the listed roles (rank order `owner > admin > member > guest`; `owner` is always allowed). Providers **MAY** define additional channel actions or roles.
+* **Fallback.** When the channel omits an action, the channel inherits the group equivalent: each `post:<type>` and `react` fall back to the group's `post` action; `view` falls back to the channel `tier` semantics (§11). A channel with no `permissions` object therefore behaves exactly as in v0.1 prior to this addition.
+* **`view`.** When present, only members whose role rank ≥ min(`view`) may read the channel (list messages, subscribe, receive fan-out), **overriding** the channel `tier`. This lets, for example, a `public`-tier group restrict an individual channel to admins. When absent, channel read access follows `tier`.
+* **`post:<type>`.** Gates creation of a message of that `type` (§5.3) in the channel. A `message.create` whose `type` the actor is not permitted to post **MUST** be rejected with `403`.
+* **`react`.** Gates adding reactions (§7) in the channel.
+* **`replyOnly`** is a **restriction**, not a grant. An actor is *reply-restricted* when their role rank is **≤** the maximum rank among the listed roles — **except `owner`, who is never reply-restricted**. A reply-restricted actor may post **only** when the message carries a `reference` (§5.3) — i.e. it is a reply; a top-level post **MUST** be rejected with `403`. (Example: `"replyOnly": ["member"]` restricts `member` and `guest`.)
+* **`replyOnlyTo`**, when present, further constrains a reply-restricted actor: the referenced parent message's `type` **MUST** be one of the listed types, otherwise the post is rejected with `403`. This expresses rules such as "guests may only reply to memos or articles".
+* Permission checks are applied **after** the ordered signature checks of §4.5 and do not alter them.
+
 ### 5.3. Message Objects
 
 **Chat**
@@ -1420,6 +1455,18 @@ Response example:
   }
 }
 ```
+
+#### Replies
+
+A message's `reference` (§5.3) links a reply to its parent: `reference.type` is `"reply"` and `reference.id` is the parent message's `id`. Threading is a flat parent pointer — a reply **MAY** target any message in the same channel, including a `memo`, an `article`, or another reply; clients reconstruct threads by following `reference.id`. Replies are **same-channel**: `reference.id` **MUST** resolve to a message in the same channel. Replying to a **tombstoned** message is permitted (the `id` is retained, §7.1), preserving thread context.
+
+Because a parent and its replies can be arbitrarily far apart in a paginated timeline, providers **MUST** expose a reply listing so clients can fetch a thread directly:
+
+```
+GET /api/groups/{groupId}/channels/{channelId}/messages/{messageId}/replies?cursor=…&direction=forward&limit=50
+```
+
+It returns the same paginated shape as `…/messages` (`{ items: [ Message ], page: { nextCursor?, prevCursor? } }`, validated against `messages-page.json`), containing the messages whose `reference.id` equals `{messageId}`, ordered within the shared cursor space (§7.1). Access follows the channel read rules (`tier` and any channel `view` permission, §5.2.1). Message objects **MAY** additionally carry an advisory `replyCount` integer; it is a non-authoritative convenience (clients **MUST NOT** rely on it for correctness) and is forward-compatible via §2.3.
 
 ### 7.3. Error semantics
 

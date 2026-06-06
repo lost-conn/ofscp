@@ -10,6 +10,7 @@
     "tier": { "$ref": "./defs/common.json#/$defs/Tier" },
     "topic": { "type": "string" },
     "tags": { "type": "array", "items": { "type": "string" } },
+    "permissions": { "$ref": "./defs/groups.json#/$defs/ChannelPermissions" },
     "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
   }
 }

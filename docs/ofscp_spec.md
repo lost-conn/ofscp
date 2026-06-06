@@ -396,12 +396,12 @@ On logout, clients **SHOULD** request revocation of that device's key from their
 
 ### 4.8. Guest Accounts
 
-A **guest account** is a lightweight, **provider-local** account created by redeeming an invite (§5.5) instead of by password registration. It lets someone participate in a group without a full home-provider account.
+A **guest account** is a lightweight, **provider-local** account created by redeeming an invite (§5.6) instead of by password registration. It lets someone participate in a group without a full home-provider account.
 
 A guest account:
 
 * Is created on the **group's** provider and bound to the group it joined; it **MAY** carry an `expiresAt` after which the provider **SHOULD** revoke it.
-* Authenticates exactly like a normal account: the guest registers an Ed25519 **device key** during provisioning (§5.5), and all subsequent requests are signed (§4.4). There is **no password**; the device key is the only credential.
+* Authenticates exactly like a normal account: the guest registers an Ed25519 **device key** during provisioning (§5.6), and all subsequent requests are signed (§4.4). There is **no password**; the device key is the only credential.
 * Is represented by a `UserProfile` with `"guest": true` (and optional `expiresAt`). Its role within the group defaults to `guest`; whether guests may post is governed by the group's permission map (§5.2).
 * Is **not federated.** A guest actor **MUST NOT** be used for cross-provider requests, and remote providers **MAY** refuse to resolve or accept guest actors. The provider **MAY** still serve the guest's public key at the keys endpoint (§4.6) so that local verification works.
 
@@ -1010,6 +1010,8 @@ Example response:
   "presenceVisibility": "sharedGroups",
   "profileVisibility": "public",
   "membershipVisibility": "contacts",
+  "allowList": ["jane@a.com"],
+  "denyList": ["spammer@b.com"],
   "metadata": []
 }
 ```
@@ -1027,6 +1029,8 @@ Example request:
   "presenceVisibility": "sharedGroups",
   "profileVisibility": "public",
   "membershipVisibility": "contacts",
+  "allowList": ["jane@a.com"],
+  "denyList": ["spammer@b.com"],
   "metadata": []
 }
 ```

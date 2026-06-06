@@ -8,6 +8,16 @@
     "presenceVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
     "profileVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
     "membershipVisibility": { "$ref": "./defs/privacy.json#/$defs/VisibilityPolicy" },
+    "allowList": {
+      "description": "Optional list of user references whose access overrides the visibility setting (always allowed). See §6.1.",
+      "type": "array",
+      "items": { "$ref": "./defs/identity.json#/$defs/UserRef" }
+    },
+    "denyList": {
+      "description": "Optional list of user references whose access overrides the visibility setting (always denied). See §6.1.",
+      "type": "array",
+      "items": { "$ref": "./defs/identity.json#/$defs/UserRef" }
+    },
     "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
   }
 }

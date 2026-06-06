@@ -1119,7 +1119,7 @@ The WebSocket handshake itself is **not** signed: browsers cannot set arbitrary 
    <challenge-nonce>
    <timestamp>
    ```
-   where `<authority>` is the provider's host (§4.4.2) and `<challenge-nonce>` is the `nonce` from `auth.challenge`. Binding to the server's challenge nonce makes each `authenticate` usable on exactly one connection, once.
+   where `<authority>` is the provider's host (§4.4.2) and `<challenge-nonce>` is the `nonce` from `auth.challenge`. Binding to the server's challenge nonce makes each `authenticate` usable on exactly one connection, once. A conformance test vector is published at [`tests/ws-signing-vector.json`](../tests/ws-signing-vector.json).
 3. The provider verifies the signature using the actor's key (§4.5 steps 3, 6, 7), confirms the nonce is the one it issued for this connection and is unused and unexpired, and on success replies:
    ```json
    {

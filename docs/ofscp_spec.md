@@ -535,7 +535,7 @@ A channel **MAY** carry an optional `permissions` object that refines the group'
 ```
 
 * **Grant actions** — `view`, `post:message`, `post:memo`, `post:article`, and `react` — are **rank-inherited**, identical to group permissions: an actor is allowed when their role rank is **≥** the minimum rank among the listed roles (rank order `owner > admin > member > guest`; `owner` is always allowed). Providers **MAY** define additional channel actions or roles.
-* **Fallback.** When the channel omits an action, the channel inherits the group equivalent: each `post:<type>` and `react` fall back to the group's `post` action; `view` falls back to the channel `tier` semantics (§11). A channel with no `permissions` object therefore behaves exactly as in v0.1 prior to this addition.
+* **Fallback.** When the channel omits an action, the channel inherits the group equivalent: each `post:<type>` falls back to the group's `post` action; `view` falls back to the channel `tier` semantics (§11); `react` falls back to "any actor permitted to read the channel may react" (the v0.1 default). A channel with no `permissions` object therefore behaves exactly as in v0.1 prior to this addition.
 * **`view`.** When present, only members whose role rank ≥ min(`view`) may read the channel (list messages, subscribe, receive fan-out), **overriding** the channel `tier`. This lets, for example, a `public`-tier group restrict an individual channel to admins. When absent, channel read access follows `tier`.
 * **`post:<type>`.** Gates creation of a message of that `type` (§5.3) in the channel. A `message.create` whose `type` the actor is not permitted to post **MUST** be rejected with `403`.
 * **`react`.** Gates adding reactions (§7) in the channel.

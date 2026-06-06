@@ -16,6 +16,10 @@
           "properties": {
             "groupId": { "type": "string", "minLength": 1 },
             "channelId": { "type": "string", "minLength": 1 },
+            "cursor": {
+              "$ref": "../defs/common.json#/$defs/OpaqueCursor",
+              "description": "Opaque position of this event in the channel timeline (same cursor space as REST history, §7.2). Clients persist this to resume via subscribe.since."
+            },
             "message": { "$ref": "./message-created.json#/allOf/1/properties/data/properties/message" }
           }
         }

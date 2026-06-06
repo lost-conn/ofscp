@@ -47,6 +47,11 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "replyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Advisory, non-authoritative count of messages whose reference.id is this message (§7.2). Clients MUST NOT rely on it for correctness."
+        },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "editedAt": {
           "$ref": "./common.json#/$defs/Rfc3339DateTime",

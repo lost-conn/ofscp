@@ -6,10 +6,16 @@
   "joinPolicy": "open",
   "tier": "public",
   "permissions": {
-    "post": ["member"],
+    "post": ["admin", "member"],
     "moderate": ["admin"],
     "manage": ["admin"]
   },
+  "roles": [
+    { "name": "admin", "color": "#9837be" },
+    { "name": "moderator", "label": "Moderator", "color": "#37be7d" },
+    { "name": "member", "color": "#37a8be" },
+    { "name": "guest", "color": "#8a8f98" }
+  ],
   "createdAt": "2025-03-01T12:00:00Z",
   "updatedAt": "2025-03-01T12:00:00Z",
   "metadata": []

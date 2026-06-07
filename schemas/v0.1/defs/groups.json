@@ -7,8 +7,19 @@
     "Role": {
       "type": "string",
       "minLength": 1,
-      "description": "A membership role. Canonical roles are `owner`, `admin`, and `member`; providers MAY define additional roles.",
-      "examples": ["owner", "admin", "member"]
+      "description": "A membership role. Canonical roles are `owner`, `admin`, `member`, and `guest`; a group MAY define additional roles via its `roles` catalogue.",
+      "examples": ["owner", "admin", "member", "moderator"]
+    },
+    "RoleDefinition": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name"],
+      "description": "A role a group defines (§5.2). Declares a role's name (and optional UI hints) so clients can offer it for assignment and render it, including custom roles beyond the canonical owner/admin/member/guest. A role's permissions are resolved from the group's `permissions` map, not from this object.",
+      "properties": {
+        "name": { "$ref": "#/$defs/Role" },
+        "label": { "type": "string", "description": "Optional human-readable display name; defaults to `name`." },
+        "color": { "type": "string", "description": "Optional UI hint, e.g. a hex color for a role badge." }
+      }
     },
     "JoinPolicy": {
       "type": "string",
@@ -21,7 +32,7 @@
     },
     "GroupPermissions": {
       "type": "object",
-      "description": "Maps an action to the roles permitted to perform it. Common actions: `post`, `moderate`, `manage`. Providers MAY define additional actions.",
+      "description": "Maps an action to the exact set of roles permitted to perform it. A role may perform an action iff it is listed for that action — there is no rank inheritance between roles. The owner implicitly holds every permission and is always allowed. Common actions: `post`, `moderate`, `manage`. Providers MAY define additional actions.",
       "additionalProperties": {
         "type": "array",
         "items": { "$ref": "#/$defs/Role" }
@@ -34,7 +45,7 @@
     },
     "ChannelPermissions": {
       "type": "object",
-      "description": "Per-channel permission overrides (§5.2). Maps a channel action to the roles permitted to perform it, refining the group's `permissions`. Grant actions (`view`, `post:message`, `post:memo`, `post:article`, `react`) are rank-inherited: an actor is allowed when their role rank is at least the minimum rank among the listed roles (owner is always allowed). When an action is omitted the channel inherits the group equivalent (`post:*` and `react` fall back to group `post`; `view` falls back to the channel `tier`). `replyOnly` is a restriction, not a grant: actors whose role rank is at most the maximum rank among the listed roles (owner exempt) may post only when the message carries a `reference` (i.e. is a reply). `replyOnlyTo`, when present, further constrains such replies so the referenced parent message's `type` must be one of the listed types.",
+      "description": "Per-channel permission overrides (§5.2). Maps a channel action to the exact set of roles permitted to perform it, refining the group's `permissions`. Grant actions (`view`, `post:message`, `post:memo`, `post:article`, `react`) use exact membership: an actor is allowed iff their role is listed for the action (owner is always allowed); there is no rank inheritance. When an action is omitted the channel inherits the group equivalent (`post:*` and `react` fall back to group `post`; `view` falls back to the channel `tier`). `replyOnly` is a restriction, not a grant: an actor whose role is listed (owner exempt) may post only when the message carries a `reference` (i.e. is a reply). `replyOnlyTo`, when present, further constrains such replies so the referenced parent message's `type` must be one of the listed types.",
       "additionalProperties": {
         "type": "array",
         "items": { "$ref": "#/$defs/Role" }
@@ -79,6 +90,11 @@
         "joinPolicy": { "$ref": "#/$defs/JoinPolicy" },
         "tier": { "$ref": "./common.json#/$defs/Tier" },
         "permissions": { "$ref": "#/$defs/GroupPermissions" },
+        "roles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RoleDefinition" },
+          "description": "Optional catalogue of the roles this group defines, including custom roles beyond the canonical owner/admin/member/guest (§5.2). Absent = canonical roles only."
+        },
         "createdAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "updatedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" },
         "metadata": { "$ref": "./objects.json#/$defs/MetadataList" }

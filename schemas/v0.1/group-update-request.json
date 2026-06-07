@@ -11,6 +11,10 @@
     "tier": { "$ref": "./defs/common.json#/$defs/Tier" },
     "joinPolicy": { "$ref": "./defs/groups.json#/$defs/JoinPolicy" },
     "permissions": { "$ref": "./defs/groups.json#/$defs/GroupPermissions" },
+    "roles": {
+      "type": "array",
+      "items": { "$ref": "./defs/groups.json#/$defs/RoleDefinition" }
+    },
     "metadata": { "$ref": "./defs/objects.json#/$defs/MetadataList" }
   }
 }

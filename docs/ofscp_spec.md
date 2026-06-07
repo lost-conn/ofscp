@@ -475,10 +475,15 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
   "joinPolicy": "open",
   "tier": "public",
   "permissions": {
-    "post": ["member"],
+    "post": ["admin", "member"],
     "moderate": ["admin"],
     "manage": ["admin"]
   },
+  "roles": [
+    { "name": "admin", "color": "#9837be" },
+    { "name": "member", "color": "#37a8be" },
+    { "name": "guest", "color": "#8a8f98" }
+  ],
   "createdAt": "2025-03-01T12:00:00Z",
   "updatedAt": "2025-03-01T12:00:00Z",
   "metadata": []
@@ -486,7 +491,8 @@ A **Group** is the canonical container object. Channels are **not** embedded in 
 ```
 
 * `joinPolicy` is one of `open` (anyone may join), `request` (join requires approval), or `invite` (invitation only).
-* `permissions` maps an **action** to the **roles** permitted to perform it. Canonical actions are `post`, `moderate`, and `manage`; canonical roles are `owner`, `admin`, and `member`. Providers **MAY** define additional actions or roles.
+* `permissions` maps an **action** to the **exact set of roles** permitted to perform it. A role may perform an action **iff it is listed** for that action — there is **no rank inheritance** between roles (listing `admin` does *not* implicitly grant the action to higher-authority roles, and listing `member` does *not* implicitly grant it to `admin`). The `owner` is the single exception: the owner implicitly holds **every** permission and is **always** allowed, regardless of the map. Canonical actions are `post`, `moderate`, and `manage`; providers **MAY** define additional actions. Because grants are explicit, a role's powers **need not be nested** — a group may, for example, define a role that may `moderate` but not `post`.
+* `roles` is an **OPTIONAL** catalogue of the roles a group defines — an array of `RoleDefinition` objects `{ name, color?, label? }`. It lets a group declare **custom roles** beyond the canonical `owner`/`admin`/`member`/`guest` (e.g. `moderator`, `contributor`) so clients can offer them for assignment and render them, even before any `permissions` entry references them. The canonical roles always exist and **MAY** be omitted from `roles`. `owner` is **reserved** as the super-role and **MUST NOT** be redefined with reduced powers. A membership `role` or a `permissions` entry that names a role which is neither canonical nor present in `roles` is a valid wire value, but such an unknown role holds **no** permissions (it fails closed). When `roles` is absent a provider behaves exactly as before this addition, using the canonical roles only.
 * `tier` is the group's access/discoverability tier (§11). The same field appears on channels.
 
 **Channel (example):**
@@ -534,12 +540,12 @@ A channel **MAY** carry an optional `permissions` object that refines the group'
 }
 ```
 
-* **Grant actions** — `view`, `post:message`, `post:memo`, `post:article`, and `react` — are **rank-inherited**, identical to group permissions: an actor is allowed when their role rank is **≥** the minimum rank among the listed roles (rank order `owner > admin > member > guest`; `owner` is always allowed). Providers **MAY** define additional channel actions or roles.
+* **Grant actions** — `view`, `post:message`, `post:memo`, `post:article`, and `react` — use the same **exact-membership** rule as group permissions: an actor is allowed **iff their role is listed** for the action (`owner` is always allowed). There is no rank inheritance. Providers **MAY** define additional channel actions or roles.
 * **Fallback.** When the channel omits an action, the channel inherits the group equivalent: each `post:<type>` falls back to the group's `post` action; `view` falls back to the channel `tier` semantics (§11); `react` falls back to "any actor permitted to read the channel may react" (the v0.1 default). A channel with no `permissions` object therefore behaves exactly as in v0.1 prior to this addition.
-* **`view`.** When present, only members whose role rank ≥ min(`view`) may read the channel (list messages, subscribe, receive fan-out), **overriding** the channel `tier`. This lets, for example, a `public`-tier group restrict an individual channel to admins. When absent, channel read access follows `tier`.
+* **`view`.** When present, only members whose role is listed in `view` may read the channel (list messages, subscribe, receive fan-out), **overriding** the channel `tier`. This lets, for example, a `public`-tier group restrict an individual channel to admins. When absent, channel read access follows `tier`.
 * **`post:<type>`.** Gates creation of a message of that `type` (§5.3) in the channel. A `message.create` whose `type` the actor is not permitted to post **MUST** be rejected with `403`.
 * **`react`.** Gates adding reactions (§7) in the channel.
-* **`replyOnly`** is a **restriction**, not a grant. An actor is *reply-restricted* when their role rank is **≤** the maximum rank among the listed roles — **except `owner`, who is never reply-restricted**. A reply-restricted actor may post **only** when the message carries a `reference` (§5.3) — i.e. it is a reply; a top-level post **MUST** be rejected with `403`. (Example: `"replyOnly": ["member"]` restricts `member` and `guest`.)
+* **`replyOnly`** is a **restriction**, not a grant. An actor is *reply-restricted* when their role **is listed** in `replyOnly` — **except `owner`, who is never reply-restricted**. A reply-restricted actor may post **only** when the message carries a `reference` (§5.3) — i.e. it is a reply; a top-level post **MUST** be rejected with `403`. (Example: `"replyOnly": ["member", "guest"]` restricts `member` and `guest`.)
 * **`replyOnlyTo`**, when present, further constrains a reply-restricted actor: the referenced parent message's `type` **MUST** be one of the listed types, otherwise the post is rejected with `403`. This expresses rules such as "guests may only reply to memos or articles".
 * Permission checks are applied **after** the ordered signature checks of §4.5 and do not alter them.
 
@@ -857,7 +863,9 @@ The provider binds the device key to the new guest actor; all subsequent request
 
 ### 5.7. Membership
 
-A **member** is `{ user, role, joinedAt }`. Roles default to `member`; canonical roles are `owner`, `admin`, `member`, and `guest` (§5.2). Permissions are resolved from the group's permission map (§5.2).
+A **member** is `{ user, role, joinedAt }`. Roles default to `member`; canonical roles are `owner`, `admin`, `member`, and `guest`, and a group **MAY** define additional roles via its `roles` catalogue (§5.2). Each role's permissions are resolved from the group's permission map (§5.2): a role's **permission set** is the set of actions for which the role is listed, plus — for `owner` — every permission.
+
+Several membership mutations are constrained by a **subset (self-protect) rule**: an actor **MUST NOT** perform a mutation that touches a member holding a permission the actor does not itself hold, nor grant a role holding such a permission. Concretely, with `perms(role)` the role's permission set: a caller `C` may act on a target role `T` only when `perms(T) ⊆ perms(C)`. The `owner` holds every permission, so the owner may act on anyone; and because the owner's set is a superset of all others, no non-owner may act on the owner through these rules.
 
 #### POST /api/groups/{groupId}/join
 
@@ -882,11 +890,11 @@ Lists members. **Authorization:** visible to group members; for `public`/`discov
 
 #### PATCH /api/groups/{groupId}/members/{userRef}
 
-Changes a member's `role` (promote/demote). **Authorization:** group `manage` role. Transferring `owner` is an owner-only action. **Request:** `{ "role": "admin" }`. **Response (`200 OK`):** the updated `Member`. **Errors:** `403`, `404`.
+Changes a member's `role` (promote/demote). **Authorization:** group `manage` role. The **subset rule** (§5.7) applies to **both** the member's current role and the requested role: the caller **MUST** hold every permission held by the member's current role *and* every permission held by the requested role, otherwise the provider **MUST** reject with `403` (a manager cannot demote someone more powerful than themselves, nor grant a role more powerful than their own). Assigning the `owner` role is an **owner-only** ownership transfer (the former owner is demoted to `admin`, preserving the single-owner invariant); the assigned role **MUST** be either a canonical role or one present in the group's `roles` catalogue (§5.2). **Request:** `{ "role": "admin" }`. **Response (`200 OK`):** the updated `Member`. **Errors:** `403`, `404`.
 
 #### DELETE /api/groups/{groupId}/members/{userRef}
 
-Removes (kicks) a member. **Authorization:** group `moderate` role; the target **MUST NOT** outrank the caller. **Response:** `204 No Content`. (Banning — preventing rejoin — is left to the moderation work in §13.)
+Removes (kicks) a member. **Authorization:** group `moderate` role, **and** the **subset rule** (§5.7): the caller **MUST** hold every permission the target holds, otherwise the provider **MUST** reject with `403`. The `owner` can never be kicked. **Response:** `204 No Content`. (Banning — preventing rejoin — is left to the moderation work in §13.)
 
 #### Join requests (for `request` policy)
 

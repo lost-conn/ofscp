@@ -53,7 +53,7 @@ Projects that have implemented OFSCP, whether you're looking for example code or
 ### Providers
 
 - [Forumall](https://github.com/lost-conn/forumall)
-  A provider and client implementation built with Dioxus, making it easy to host a provider with a web client.
+  A provider and client implementation, making it easy to host a provider with a web client.
 
 ### Clients
 

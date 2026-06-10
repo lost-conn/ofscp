@@ -1597,6 +1597,53 @@ When a DM is delivered to the user's inbox, the provider emits `dm.message`:
 
 Only the recipient receives `dm.message`, since only their inbox stores the message. Editing and deleting DMs follow the same author/tombstone rules as §7.1, applied against the recipient's stored copy.
 
+#### Reactions, replies & typing
+
+DMs reuse the message object of §5.3, so they also support reactions (§7.1), replies (§7.2) and typing indicators (§7.1), scoped to a `dmId` instead of a `(groupId, channelId)` pair. All of the following are OPTIONAL and additive; a provider that omits them remains conformant.
+
+**Reactions.** A DM reaction is a `Reaction` object (§5.3) referencing a DM message. Because a DM message is stored only in the recipient's inbox (§8.3, source of truth), its reactions are **stored alongside the target message** — on whichever provider holds that message. A reaction therefore follows the **same client→provider delivery path as the DM message itself** (§8.3): the reacting client signs (§4.4) and delivers to the message's home provider, which stores the reaction and emits `dm.reaction` to the conversation's local subscribers.
+
+* `PUT /api/dms/{dmId}/messages/{messageId}/reactions/{key}` — add your reaction (optional body `{ "unicode": "…", "image": "…" }`); idempotent (at most one reaction per `key` per message per user).
+* `DELETE /api/dms/{dmId}/messages/{messageId}/reactions/{key}` — remove your reaction. `204 No Content`.
+* `GET /api/dms/{dmId}/messages/{messageId}/reactions` — paginated list of `Reaction` objects for the message (history & late joiners), mirroring §7.1.
+
+The provider emits a `dm.reaction` event mirroring the channel `reaction.added`/`reaction.removed` shape but DM-scoped, carrying the `dmId`, the `state` (`added` or `removed`), and either the full `reaction` (on add) or the `key`+`author` (on remove):
+
+```json
+{
+  "id": "evt_910",
+  "type": "dm.reaction",
+  "ts": "2026-01-05T18:43:00Z",
+  "data": {
+    "dmId": "dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e46868",
+    "messageId": "msg_77",
+    "state": "added",
+    "reaction": { "id": "rct_5", "author": "bob@b.com", "key": "heart", "unicode": "❤️", "reference": { "type": "message", "id": "msg_77" }, "createdAt": "2026-01-05T18:43:00Z", "metadata": [] }
+  }
+}
+```
+
+**Replies.** Threading works exactly as in §7.2: a reply carries `reference.type === "reply"` with `reference.id` set to the parent DM message's `id`, and `reference.id` **MUST** resolve to a message in the **same conversation**. Providers expose the same reply listing as §7.2, DM-scoped:
+
+```
+GET /api/dms/{dmId}/messages/{messageId}/replies?cursor=…&direction=forward&limit=50
+```
+
+It returns the same paginated shape as `…/messages` (`{ items: [ Message ], page: { nextCursor?, prevCursor? } }`), containing the messages whose `reference.id` equals `{messageId}`, ordered within the conversation's cursor space, scoped to the authenticated user's inbox (participants only, §7.4).
+
+**Typing.** A participant signals typing over the WebSocket of §7.1 with the `dmId` as the target (`{ "type": "typing.start", "data": { "channelId": "dm_…" } }`); the provider emits a `dm.typing` event keyed by `dmId`, mirroring `channel.typing`:
+
+```json
+{
+  "id": "evt_311",
+  "type": "dm.typing",
+  "ts": "2026-01-05T18:41:55Z",
+  "data": { "dmId": "dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e46868", "user": "bob@b.com", "state": "start" }
+}
+```
+
+Typing is soft state with the same auto-expiry and disconnect rules as §7.1.
+
 ### 7.5. Real-time presence
 
 Presence (§6.4: `availability` ∈ `online`/`away`/`dnd`/`offline`, plus `status`, `lastSeen`) is delivered live over the §7.1 WebSocket rather than by polling the REST endpoint.
@@ -1728,6 +1775,7 @@ The local DM lifecycle (conversation id derivation, listing, reading, real-time)
 * **Client-to-Remote Delivery:** Clients **MUST** deliver DMs directly to the recipient's home provider via `POST /api/federation/dms/{dmId}/messages`, user-signed (§4.4). The body is a single message (`clientMessageId`, `content`, optional `attachments` and `reference`).
 * **Verification:** The receiving provider **MUST** reject the delivery with **`400`** when `{dmId}` does not equal the id derived from `{author, recipient}`, preventing delivery into a conversation the author is not part of.
 * **Storage:** The recipient's provider stores the message in the recipient's inbox and emits `dm.message` to the recipient's subscribers (§7.4).
+* **Reactions (OPTIONAL):** A DM reaction is stored alongside its target message — i.e. on the provider that holds that message (the source of truth above). Add/remove therefore follow the **same client→provider delivery path as the DM message**: the reacting client signs (§4.4) and delivers to the message's home provider (e.g. `PUT|DELETE /api/federation/dms/{dmId}/messages/{messageId}/reactions/{key}`), which stores it and emits `dm.reaction` (§7.4). No sender copy.
 
 #### Confidentiality (Normative)
 

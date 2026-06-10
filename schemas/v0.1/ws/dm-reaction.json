@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/ws/dm-reaction.json",
+  "title": "OFSCP WS dm.reaction event (v0.1)",
+  "description": "Emitted to a DM conversation's subscribers when a reaction is added to or removed from a DM message stored in the recipient's inbox (§7.4). DM-scoped mirror of reaction.added/reaction.removed: `state` is `added` (carries the full `reaction`) or `removed` (carries `key`+`author`).",
+  "allOf": [
+    { "$ref": "./envelope.json" },
+    {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "dm.reaction" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["dmId", "messageId", "state"],
+          "properties": {
+            "dmId": { "$ref": "../defs/common.json#/$defs/DmId" },
+            "messageId": { "type": "string", "minLength": 1 },
+            "state": { "type": "string", "enum": ["added", "removed"] },
+            "reaction": {
+              "$ref": "../defs/messaging.json#/$defs/Reaction",
+              "description": "Present on state=added; the full Reaction object."
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Present on state=removed; the reaction key that was removed."
+            },
+            "author": {
+              "$ref": "../defs/identity.json#/$defs/UserRef",
+              "description": "Present on state=removed; the actor whose reaction was removed."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

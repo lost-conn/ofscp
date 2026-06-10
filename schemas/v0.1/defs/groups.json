@@ -163,6 +163,10 @@
       "properties": {
         "user": { "$ref": "./identity.json#/$defs/UserRef" },
         "role": { "$ref": "#/$defs/Role" },
+        "displayNameOverride": {
+          "type": "string",
+          "description": "Optional group-scoped display name that overrides the user's global `UserProfile.displayName` (§5.1.1) within this group only. Absent = use the global display name."
+        },
         "joinedAt": { "$ref": "./common.json#/$defs/Rfc3339DateTime" }
       }
     },

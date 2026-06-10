@@ -865,6 +865,8 @@ The provider binds the device key to the new guest actor; all subsequent request
 
 A **member** is `{ user, role, joinedAt }`. Roles default to `member`; canonical roles are `owner`, `admin`, `member`, and `guest`, and a group **MAY** define additional roles via its `roles` catalogue (§5.2). Each role's permissions are resolved from the group's permission map (§5.2): a role's **permission set** is the set of actions for which the role is listed, plus — for `owner` — every permission.
 
+A member **MAY** also carry an optional `displayNameOverride`: a group-scoped display name that overrides the user's global `UserProfile.displayName` (§5.1.1) within that one group, absent = use the global name. It is stored by the group's home provider and returned in member lists.
+
 Several membership mutations are constrained by a **subset (self-protect) rule**: an actor **MUST NOT** perform a mutation that touches a member holding a permission the actor does not itself hold, nor grant a role holding such a permission. Concretely, with `perms(role)` the role's permission set: a caller `C` may act on a target role `T` only when `perms(T) ⊆ perms(C)`. The `owner` holds every permission, so the owner may act on anyone; and because the owner's set is a superset of all others, no non-owner may act on the owner through these rules.
 
 #### POST /api/groups/{groupId}/join

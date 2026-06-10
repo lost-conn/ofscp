@@ -90,6 +90,8 @@ async function main() {
     ['tests/dm-conversations-response.sample.json', 'schemas/v0.1/dm-conversations-response.json'],
     ['tests/dm-message-create-request.sample.json', 'schemas/v0.1/dm-message-create-request.json'],
     ['tests/ws-dm-message.sample.json', 'schemas/v0.1/ws/dm-message.json'],
+    ['tests/ws-dm-reaction.sample.json', 'schemas/v0.1/ws/dm-reaction.json'],
+    ['tests/ws-dm-typing.sample.json', 'schemas/v0.1/ws/dm-typing.json'],
 
     // Follows & home feed (§7.6)
     ['tests/follow.sample.json', 'schemas/v0.1/follow.json'],

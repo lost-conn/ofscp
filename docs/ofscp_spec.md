@@ -1623,6 +1623,8 @@ The provider emits a `dm.reaction` event mirroring the channel `reaction.added`/
 }
 ```
 
+**Edits & deletes.** Editing and deleting a DM message follow the **same storage-follows-message rule** as reactions: the message lives only on the provider that holds it (the recipient's inbox, §8.3), so an `PATCH`/`DELETE` of a message the actor **sent** is forwarded to that message's home provider over the same client→provider delivery path (mirroring DM-send and DM-reaction). Only the **original author** may edit or delete, and the provider applies the §7.1 author/tombstone rules against its stored copy and emits the resulting `dm.message` update to local subscribers. A provider-signed federation ingest variant exists for edit/delete just as it does for delivery and reactions (§8.3).
+
 **Replies.** Threading works exactly as in §7.2: a reply carries `reference.type === "reply"` with `reference.id` set to the parent DM message's `id`, and `reference.id` **MUST** resolve to a message in the **same conversation**. Providers expose the same reply listing as §7.2, DM-scoped:
 
 ```
@@ -1776,6 +1778,7 @@ The local DM lifecycle (conversation id derivation, listing, reading, real-time)
 * **Verification:** The receiving provider **MUST** reject the delivery with **`400`** when `{dmId}` does not equal the id derived from `{author, recipient}`, preventing delivery into a conversation the author is not part of.
 * **Storage:** The recipient's provider stores the message in the recipient's inbox and emits `dm.message` to the recipient's subscribers (§7.4).
 * **Reactions (OPTIONAL):** A DM reaction is stored alongside its target message — i.e. on the provider that holds that message (the source of truth above). Add/remove therefore follow the **same client→provider delivery path as the DM message**: the reacting client signs (§4.4) and delivers to the message's home provider (e.g. `PUT|DELETE /api/federation/dms/{dmId}/messages/{messageId}/reactions/{key}`), which stores it and emits `dm.reaction` (§7.4). No sender copy.
+* **Edits & deletes (OPTIONAL):** A DM message edit/delete is likewise applied on the provider that holds the message (the source of truth above), so editing/deleting a message the actor **sent** follows the **same client→provider delivery path as the DM message**: the author signs (§4.4) and delivers to the message's home provider (e.g. `PATCH|DELETE /api/federation/dms/{dmId}/messages/{messageId}`), which applies the §7.1 author/tombstone rules and emits the resulting `dm.message` update (§7.4). Only the original author may do so. No sender copy.
 
 #### Confidentiality (Normative)
 

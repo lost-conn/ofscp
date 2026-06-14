@@ -1547,7 +1547,7 @@ dmId:             dm_c2a3a0d4bc7aa54700d2f412c42fc0155df6071e502977e4988933eef7e
 
 #### Source of truth & sender copies (Normative)
 
-Per §8.3, the **recipient's home provider is the sole authoritative store** for a DM. OFSCP v0.1 keeps **no sender copy**: a provider stores a DM only in the *recipient's* inbox. Consequently `GET /api/dms/{dmId}/messages` returns the messages in the authenticated user's own inbox for that conversation — those *received* from the other party. A client that wishes to display its own sent messages **MUST** retain them locally (e.g. an optimistic local echo keyed by `clientMessageId`); the protocol does not reconstruct sent history from the recipient's store.
+Per §8.3, the **recipient's home provider is the sole authoritative store** for a DM. OFSCP v0.1 keeps **no sender copy**: a provider stores a DM only in the *recipient's* inbox. `GET /api/dms/{dmId}/messages` returns the authenticated participant's full conversation view that the queried provider can serve: messages they *received* (held in their own inbox) **and** messages they *sent* (rows authored by them that reside in the counterparty's inbox held on this provider), ordered together within the shared cursor space (§7.2). A provider **MUST** restrict access to the conversation's two participants. A client **MAY** retain its own sent messages locally as an offline cache / optimistic echo keyed by `clientMessageId`, but this is no longer required for a participant to read back their sent history that the queried provider holds.
 
 #### Sending
 
@@ -1570,7 +1570,7 @@ This is the single send path whether the recipient is remote or local to the sen
 #### Listing & reading
 
 * `GET /api/me/dms` — paginated list of the authenticated user's DM conversations (`DmConversation` summaries: `id`, `participants`, optional `lastMessage`, `updatedAt`), using the opaque-cursor paging of §7.2.
-* `GET /api/dms/{dmId}/messages?cursor=…&direction=…&limit=…` — paginated message history from the user's inbox for the conversation, with the same cursor space and response shape as §7.2. Providers **MUST** restrict access to the conversation's participants (**`403`** otherwise) and return **`404`** for an unknown `dmId`.
+* `GET /api/dms/{dmId}/messages?cursor=…&direction=…&limit=…` — paginated message history for the conversation: the authenticated participant's full view the queried provider can serve (messages they received, plus messages they sent that reside in the counterparty's inbox held on this provider — see *Source of truth & sender copies*), with the same cursor space and response shape as §7.2. Providers **MUST** restrict access to the conversation's participants (**`403`** otherwise) and return **`404`** for an unknown `dmId`.
 
 #### Real-time
 

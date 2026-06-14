@@ -1631,7 +1631,7 @@ The provider emits a `dm.reaction` event mirroring the channel `reaction.added`/
 GET /api/dms/{dmId}/messages/{messageId}/replies?cursor=…&direction=forward&limit=50
 ```
 
-It returns the same paginated shape as `…/messages` (`{ items: [ Message ], page: { nextCursor?, prevCursor? } }`), containing the messages whose `reference.id` equals `{messageId}`, ordered within the conversation's cursor space, scoped to the authenticated user's inbox (participants only, §7.4).
+It returns the same paginated shape as `…/messages` (`{ items: [ Message ], page: { nextCursor?, prevCursor? } }`), containing the messages whose `reference.id` equals `{messageId}`, ordered within the conversation's shared cursor space, as the authenticated participant's full view the queried provider can serve (replies they received, plus replies they sent that reside in the counterparty's inbox held on this provider — see *Source of truth & sender copies*) — consistent with `GET /api/dms/{dmId}/messages`. Providers **MUST** restrict access to the conversation's participants (§7.4).
 
 **Typing.** A participant signals typing over the WebSocket of §7.1 with the `dmId` as the target (`{ "type": "typing.start", "data": { "channelId": "dm_…" } }`); the provider emits a `dm.typing` event keyed by `dmId`, mirroring `channel.typing`:
 

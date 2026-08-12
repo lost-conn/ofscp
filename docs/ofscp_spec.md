@@ -356,6 +356,20 @@ A provider receiving a signed request **MUST** perform the following checks **in
 
 Only after **all** checks pass is the request authenticated as the actor. Authorization (group/channel membership, tier, etc.) is then applied separately.
 
+#### 4.5.1. Actor Identity & Local Scope (Normative)
+
+An actor's identity is the **pair** (`handle`, `domain`) — the full `handle@domain` form of §1.2. A bare handle is **not** an identity: handles are unique only within a single provider's namespace, and OFSCP makes no global-uniqueness promise across providers. Two different people **MAY** hold the same handle on two different providers, and either of them can authenticate successfully against a third provider, because §4.6 resolves a remote signer's keys from that signer's own home provider. A remote actor is therefore just as authenticated as a local one, and is **not** a local user.
+
+For a request authenticated as an actor whose `domain` is not the provider's own:
+
+* A provider **MUST NOT** use the actor's bare handle as a key into provider-local storage — accounts and profiles, presence, visibility settings, contacts, follows, read state, notification preferences, DM inbox ownership, device keys, or any other provider-local record. Local records **MUST** be located by an identity that carries the domain, or by a handle the provider has already established belongs to a local account.
+* A provider **MUST NOT** base any local authorization decision on the actor's bare handle, **including** operator/administrator checks.
+* Where an endpoint operates on the **caller's own local account** — the `/api/me/*` endpoints (§6, §7.4, §7.6), device key management (§4.7), and any provider-administration endpoint — the provider **MUST** reject a remote actor with **`403`** rather than silently reinterpreting the request as the like-named local user. A remote actor has no local account for such an endpoint to act on.
+
+Endpoints that legitimately serve remote actors are unaffected: channel participation (§8.2), DM and contact delivery (§8.3, §6.7), and real-time subscription (§8.5) compare and store the full `handle@domain` actor throughout.
+
+> **Security consideration.** Getting this wrong is a cross-provider **account takeover**, not a forgery: the attacker signs with their own valid device key and every check of §4.5 passes exactly as designed. The failure is downstream of verification — discarding the domain and treating what remains as a local identity. Because handle uniqueness is per-provider, the attack requires only that the attacker run a provider and register a handle matching the target's. Implementations **SHOULD** carry the domain in the authenticated-identity value itself, rather than reconstructing locality at each call site.
+
 ### 4.6. Public Key Discovery
 
 Home providers **MUST** expose an endpoint for fetching a user's active (non-revoked) public keys:
@@ -1741,6 +1755,7 @@ Authentication proves the calling provider domain; authorization is still requir
 
 * Providers **MUST** apply allow/deny policy for which remote providers may federate.
 * Providers **MUST** enforce channel/group tiers when serving federation traffic.
+* Providers **MUST** keep a remote actor's identity whole: a verified signature proves `handle@domain`, never the bare handle, which belongs to the signer's own namespace (§4.5.1).
 
 ### 8.1. Provider Signing Identity
 
@@ -1997,6 +2012,7 @@ This area is intentionally lightweight in v0.1; a richer, standardized cross-pro
 - [ ] Validate Ed25519 request signatures over the §4.4.2 canonical string, including authority binding and nonce replay rejection
 - [ ] Authenticate WebSocket connections via the signed `auth.challenge`/`authenticate` handshake (§7.1)
 - [ ] Serve user public keys via the `/.well-known/ofscp/users/{handle}/keys` endpoint
+- [ ] Scope an authenticated identity to the full `handle@domain` actor — never key provider-local storage or a local authorization decision (including administrative checks) on a remote signer's bare handle, and reject remote actors with `403` on own-account endpoints (§4.5.1)
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Support group membership: join/leave, member listing, roles, and the `request` approval flow (§5.7)
 - [ ] Support message edit (author-only, `editUntil`) and tombstone delete (§7.1)

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/join-create-request.json",
+  "title": "OFSCP POST /api/groups/{groupId}/join request body (v0.1)",
+  "description": "Optional body of a group join (§5.7). The body may be absent or zero-length (not validated); a JSON body, including `{}`, is validated against this schema when the caller is not a member and the group's effective join policy is `request` (a repeat while a request is pending included), and ignored otherwise. A provider may enforce its own maximum length for `message`.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "message": { "type": "string", "description": "Optional note from the requester, stored as JoinRequest.message. Never null." }
+  }
+}

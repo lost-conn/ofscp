@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/join-requests-page.json",
+  "title": "OFSCP GET /api/groups/{groupId}/requests response (v0.1)",
+  "description": "Paged list of the group's pending join requests (§5.7, paging per §7.2), ordered by requestedAt then id. Approved and denied requests are not listed.",
+  "allOf": [
+    { "$ref": "./defs/messaging.json#/$defs/PagedResponse" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "./defs/groups.json#/$defs/JoinRequest" }
+        }
+      }
+    }
+  ]
+}

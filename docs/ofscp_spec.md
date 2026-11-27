@@ -1001,6 +1001,19 @@ All fields are optional. The invite's `role` applies only to full accounts redee
 
 Lists the group's invites. **Authorization:** group `manage` role. The provider **MAY** omit each invite's `token` (above).
 
+The list is paginated per §7.2. Its items are ordered by `createdAt`, ties broken by `id`: the default `direction=backward` lists the newest invite first, and `forward` the oldest first. A cursor is a position in that order, not a reference to the invite it was issued at: it stays valid when that invite is revoked or deleted, so paging through the list neither skips nor repeats an invite that stays listed throughout. Schema: `invites-page.json`.
+
+**Response (`200 OK`):**
+```json
+{
+  "items": [
+    { "id": "inv_2", "groupId": "grp_1", "role": "member", "uses": 0, "createdBy": "jane@a.com", "createdAt": "2025-03-02T09:00:00Z" },
+    { "id": "inv_1", "groupId": "grp_1", "channelId": "chn_general", "role": "member", "grantsGuest": true, "maxUses": 25, "uses": 3, "expiresAt": "2025-03-08T12:00:00Z", "createdBy": "jane@a.com", "createdAt": "2025-03-01T12:00:00Z" }
+  ],
+  "page": { "nextCursor": "opaqueNextCursor" }
+}
+```
+
 #### DELETE /api/groups/{groupId}/invites/{inviteId}
 
 Revokes an invite. **Authorization:** group `manage` role. **Response:** `204 No Content`.
@@ -1057,12 +1070,14 @@ Several membership mutations are constrained by a **subset (self-protect) rule**
 Requests to join a group. Behavior depends on the group's `joinPolicy` (§5.2):
 
 * `open` → the caller becomes a member immediately. **Response (`201 Created`):** the `Member`.
-* `request` → a pending request is recorded. **Response (`202 Accepted`):** the `JoinRequest`. An optional `{ "message": "…" }` body may accompany the request. If the caller already has a **pending** request for the group, the provider **MUST** answer `202` with that existing `JoinRequest`, unchanged (its `message` is not replaced), and record nothing new (idempotent). A denied request does not block a new one: a deny is not a ban (§13), so a later join records a new pending request.
+* `request` → a pending request is recorded. **Response (`202 Accepted`):** the `JoinRequest`. An optional `{ "message": "…" }` body may accompany the request (*Request body*, below). If the caller already has a **pending** request for the group, the provider **MUST** answer `202` with that existing `JoinRequest`, unchanged (its `message` is not replaced), and record nothing new (idempotent). A denied request does not block a new one: a deny is not a ban (§13), so a later join records a new pending request.
 * `invite` → **`403 Forbidden`**; the caller must redeem an invite (§5.6).
 * A `private`-tier group always behaves as `invite`, whatever its `joinPolicy` (§11).
 * Already a member → **`200 OK`** with the existing `Member` (idempotent).
 
 The caller may be local or remote (§8.2); a remote actor joins by signing this request directly to the group's provider.
+
+**Request body.** The body is optional. An absent body, or an empty (zero-length) one, is valid and is not checked against the schema. A non-empty body that is not JSON is `400` (`bad_request`) on every join, before any answer the join policy gives (such as the `403` of an `invite` group); a JSON body is checked against `join-create-request.json`, and `{}` is valid. `message`, when present, is a string: `null` is not a valid `message`. A provider **MAY** enforce a provider-defined maximum length for `message`. A body that does not match the schema, or a `message` over the provider's maximum, is `400` (`bad_request`). As for a reaction add (§7.1), the schema and length checks belong to the step that uses the body: the provider applies them only when the caller is not a member and the group's effective join policy is `request`, before the pending-request check above, so a repeat with an invalid body is `400` too. Every other join (an `open` group, an `invite` one, a caller who is already a member) ignores a JSON body: it is not checked against the schema.
 
 #### POST /api/groups/{groupId}/leave
 
@@ -1105,11 +1120,24 @@ Whenever a member's `displayNameOverride` or `role` changes, the provider emits 
 
 All three endpoints require the group `manage` or `moderate` role. The subset rule (§5.7) does not apply to approve or deny: the approved member always gets role **`member`**, because it is the group's join policy, not the approver, that grants the role. A manager who wants another role for them changes it afterwards (`PATCH …/members/{userRef}`, which the subset rule binds).
 
-* `GET /api/groups/{groupId}/requests` — list pending `JoinRequest`s.
+* `GET /api/groups/{groupId}/requests` — list pending `JoinRequest`s (*Listing requests*, below).
 * `POST /api/groups/{groupId}/requests/{requestId}/approve` — approve; creates the membership with role `member` and marks the request `approved`. **Response (`200 OK`):** the new `Member`. If the requester is already a member (for example through an invite), the provider marks the request `approved` and answers `200` with the existing `Member`, unchanged. The provider checks the group's effective join policy first (below): while it is `invite`, approve answers `409` even when the requester is already a member, as `redeem` checks the invite first (§5.6).
 * `POST /api/groups/{groupId}/requests/{requestId}/deny` — deny; marks the request `denied`. **Response:** `204 No Content`. A deny is not a ban (§13): the user may join again, which records a new pending request.
 
 A change of tier or `joinPolicy` (`PATCH /api/groups/{groupId}`) does not purge pending requests: the provider **MUST** keep them, still `pending` and still listed. A pending request is approvable only while the group's effective join policy (its `joinPolicy`, or `invite` when its tier makes it invite-only, such as `private`, §11) is `request` or `open`; under `open` too, approval creates the membership with role `member` and marks the request `approved`. While it is `invite`, the provider **MUST** reject an approval with **`409`** `conflict` (the group no longer takes join requests) and leave the request `pending`. Deny still works under any policy. When the effective policy becomes `request` again, the kept requests are approvable again.
+
+**Listing requests.** `GET /api/groups/{groupId}/requests` lists the group's `pending` requests only: an `approved` or `denied` request is not listed. The list is paginated per §7.2. Its items are ordered by `requestedAt`, ties broken by `id`: the default `direction=backward` lists the newest request first, and `forward` the oldest first. A cursor is a position in that order, not a reference to the request it was issued at: it stays valid when that request is approved or denied (and so leaves the list), so paging through the list neither skips nor repeats a request that stays pending throughout. Schema: `join-requests-page.json`.
+
+**Response (`200 OK`):**
+```json
+{
+  "items": [
+    { "id": "jrq_2", "groupId": "grp_1", "user": "sam@c.com", "state": "pending", "requestedAt": "2025-03-02T08:30:00Z" },
+    { "id": "jrq_1", "groupId": "grp_1", "user": "newbie@b.com", "state": "pending", "message": "Hi, I'd love to join!", "requestedAt": "2025-03-01T12:00:00Z" }
+  ],
+  "page": {}
+}
+```
 
 #### My groups: membership pointers at home
 
@@ -2740,10 +2768,10 @@ Access is evaluated continuously, not only at subscription time; see §7.1 *Losi
 - [ ] Support group and channel management (create/read/update/delete) with the permission model (§5.5)
 - [ ] Support group membership: join/leave, member listing, roles, per-group nicknames, `member.updated`, and the `request` approval flow (§5.7)
 - [ ] List the owner among the members with role `owner`, keep `joinedAt` across role changes and ownership transfers, and keep the member list's order stable for cursor paging (§5.7)
-- [ ] Answer a repeat `join` under the `request` policy with `202` and the caller's existing pending `JoinRequest`, unchanged; answer `leave` from a non-member with `404` (and from the owner with `409`) (§5.7)
-- [ ] Gate join-request approve and deny on `manage` or `moderate`, without the subset rule; give an approved requester role `member`, and answer an approval for someone already a member with `200` and the existing `Member`, marking the request `approved` (§5.7)
+- [ ] Answer a repeat `join` under the `request` policy with `202` and the caller's existing pending `JoinRequest`, unchanged; under the `request` policy, check a JSON `join` body against `join-create-request.json` (absent, empty and `{}` valid; a `null` `message` invalid) and answer a mismatch, or a `message` over any provider maximum, with `400` `bad_request`, and ignore a JSON body on any other join; answer a non-empty non-JSON `join` body with `400` on every join; answer `leave` from a non-member with `404` (and from the owner with `409`) (§5.7)
+- [ ] List only `pending` join requests, paginated per §7.2 and ordered by `requestedAt` then `id`, newest first by default (`join-requests-page.json`); gate join-request approve and deny on `manage` or `moderate`, without the subset rule; give an approved requester role `member`, and answer an approval for someone already a member with `200` and the existing `Member`, marking the request `approved` (§5.7)
 - [ ] Keep pending join requests across tier and `joinPolicy` changes; reject an approval with `409` `conflict` while the effective join policy is `invite` (including a group whose tier makes it invite-only, such as `private`), leaving the request `pending`, and check this first, before the already-a-member case, so a requester who is already a member still gets `409`; still allow deny (§5.7)
-- [ ] On invite creation, reject a `role` that is `owner` or neither canonical nor in the group's `roles`, and a `channelId` that is not a channel of the group, with `400`, and an invite whose role holds a permission the creator lacks with `403`; return the invite's `token` in the `201` (it may be omitted elsewhere, including the invite listing), mint tokens with at least 128 bits of entropy from a cryptographically secure random source, and store them so that a database leak does not reveal them, e.g. as a SHA-256 digest looked up by digesting the presented token; send `Referrer-Policy: no-referrer` from any join-link page and do not log tokens (§5.6)
+- [ ] On invite creation, reject a `role` that is `owner` or neither canonical nor in the group's `roles`, and a `channelId` that is not a channel of the group, with `400`, and an invite whose role holds a permission the creator lacks with `403`; return the invite's `token` in the `201` (it may be omitted elsewhere, including the invite listing, which is paginated per §7.2 and ordered by `createdAt` then `id`, newest first by default, `invites-page.json`), mint tokens with at least 128 bits of entropy from a cryptographically secure random source, and store them so that a database leak does not reveal them, e.g. as a SHA-256 digest looked up by digesting the presented token; send `Referrer-Policy: no-referrer` from any join-link page and do not log tokens (§5.6)
 - [ ] On `redeem`, check the invite first (`404` unknown or expired, `409` exhausted, whoever the caller is); answer a valid invite redeemed by a caller who is already a member (the owner included) with `200`, the invite's `channelId` and their current role, changing no role and consuming no use of the invite; let a redemption whose invite names a since-deleted channel succeed, omitting `channelId` (§5.6)
 - [ ] Give a guest provisioned through `/invites/{token}/guest` role `guest`, whatever the invite's `role`, and join it to the group even when the invite names a since-deleted channel (§4.8, §5.6)
 - [ ] Support message creation of every type (`message`, `memo`, `article`) with `attachments`, `reference`, `tags` and `metadata`, over both `message.create` and `POST …/messages`, gated by `post:<type>` and by `replyOnly` / `replyOnlyTo` (which only a valid reply, `reference.type` `"reply"` naming an existing message in the channel, satisfies), answering `404` for a channel the actor cannot read (§5.2.1, §7.1)

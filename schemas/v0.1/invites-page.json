@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ofscp/schemas/v0.1/invites-page.json",
+  "title": "OFSCP GET /api/groups/{groupId}/invites response (v0.1)",
+  "description": "Paged list of the group's invites (§5.6, paging per §7.2), ordered by createdAt then id. The provider may omit each invite's `token`.",
+  "allOf": [
+    { "$ref": "./defs/messaging.json#/$defs/PagedResponse" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "./defs/groups.json#/$defs/Invite" }
+        }
+      }
+    }
+  ]
+}

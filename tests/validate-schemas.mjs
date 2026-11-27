@@ -74,10 +74,14 @@ async function main() {
     ['tests/channel-create-request.sample.json', 'schemas/v0.1/channel-create-request.json'],
     ['tests/channel-update-request.sample.json', 'schemas/v0.1/channel-update-request.json'],
     ['tests/invite.sample.json', 'schemas/v0.1/invite.json'],
+    ['tests/invites-page.sample.json', 'schemas/v0.1/invites-page.json'],
     ['tests/invite-create-request.sample.json', 'schemas/v0.1/invite-create-request.json'],
     ['tests/guest-create-request.sample.json', 'schemas/v0.1/guest-create-request.json'],
     ['tests/member.sample.json', 'schemas/v0.1/member.json'],
     ['tests/join-request.sample.json', 'schemas/v0.1/join-request.json'],
+    ['tests/join-requests-page.sample.json', 'schemas/v0.1/join-requests-page.json'],
+    ['tests/join-create-request.sample.json', 'schemas/v0.1/join-create-request.json'],
+    ['tests/join-create-request.empty.sample.json', 'schemas/v0.1/join-create-request.json'],
     ['tests/message.sample.json', 'schemas/v0.1/message.json'],
     ['tests/message-article.sample.json', 'schemas/v0.1/message.json'],
     ['tests/message-create-request.sample.json', 'schemas/v0.1/message-create-request.json'],
@@ -227,7 +231,9 @@ async function main() {
     // §4.3.2: `public_key` is the raw 32-byte key, not a DER SubjectPublicKeyInfo.
     ['tests/device-key-registration.spki.invalid.json', 'schemas/v0.1/device-key-registration.json'],
     // §7.1: a reaction `image` is an https URL.
-    ['tests/reaction-put-request.http-image.invalid.json', 'schemas/v0.1/reaction-put-request.json']
+    ['tests/reaction-put-request.http-image.invalid.json', 'schemas/v0.1/reaction-put-request.json'],
+    // §5.7: a join body's `message` is a string, never null.
+    ['tests/join-create-request.null-message.invalid.json', 'schemas/v0.1/join-create-request.json']
   ];
 
   for (const [samplePath, schemaPath] of rejectCases) {
